@@ -33,5 +33,22 @@ export const MOCK_RULES: DiscountRule[] = [
     startDate: '2023-04-03',
     endDate: '2026-12-31',
     customerIds: ['CUST-001', 'CUST-002']
+  },
+  {
+    id: '3',
+    type: 'PROMOTION',
+    name: 'EQP SPECIAL',
+    description: 'EQP - 5% with Half MOQ and Half Setup Charge',
+    logic: 'EQP',
+    value: 0,
+    eqpModifier: 'MINUS_5',
+    isHalfMOQ: true,
+    isHalfSetupCharge: true,
+    scope: 'SITEWIDE',
+    targetIds: [],
+    status: 'ACTIVE',
+    startDate: '2026-01-01',
+    endDate: '2026-12-31',
+    promoCode: 'EQPMAX'
   }
 ];

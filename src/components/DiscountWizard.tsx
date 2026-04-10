@@ -105,11 +105,12 @@ export function DiscountWizard({ onSave, onCancel }: DiscountWizardProps) {
         );
 
       case 1:
+        const isEQP = formData.logic === 'EQP';
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label>Discount Logic</Label>
+                <Label>Base Discount Logic</Label>
                 <Select 
                   value={formData.logic} 
                   onValueChange={(v: DiscountLogic) => updateFormData({ logic: v })}
@@ -120,24 +121,99 @@ export function DiscountWizard({ onSave, onCancel }: DiscountWizardProps) {
                   <SelectContent>
                     <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
                     <SelectItem value="FLAT_AMOUNT">Flat Amount ($)</SelectItem>
-                    <SelectItem value="EQP">EQP Sale</SelectItem>
-                    <SelectItem value="NQP">NQP Sale</SelectItem>
+                    <SelectItem value="EQP">EQP (End Quantity Pricing)</SelectItem>
+                    <SelectItem value="NQP">NQP (Next Quantity Pricing)</SelectItem>
                     <SelectItem value="SHIPPING_PERCENTAGE">Shipping Discount (%)</SelectItem>
                     <SelectItem value="SHIPPING_FLAT">Flat Shipping ($)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Discount Value</Label>
-                <Input 
-                  type="number" 
-                  placeholder="0.00" 
-                  value={formData.value || ''} 
-                  onChange={e => updateFormData({ value: parseFloat(e.target.value) })}
-                />
-              </div>
+              {!isEQP && (
+                <div className="space-y-2">
+                  <Label>Discount Value</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={formData.value || ''} 
+                    onChange={e => updateFormData({ value: parseFloat(e.target.value) })}
+                  />
+                </div>
+              )}
             </div>
+
+            {isEQP && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6 border-2 border-dashed rounded-xl bg-primary/5 space-y-6"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Settings className="w-5 h-5 text-primary" />
+                  <h4 className="font-bold text-sm uppercase tracking-wider">EQP Dynamic Rule Maker</h4>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase">1. Select Modifier</Label>
+                  <div className="flex gap-3">
+                    {[
+                      { id: 'NONE', label: 'Standard EQP' },
+                      { id: 'MINUS_3', label: 'EQP - 3%' },
+                      { id: 'MINUS_5', label: 'EQP - 5%' }
+                    ].map((m) => (
+                      <Button
+                        key={m.id}
+                        type="button"
+                        variant={formData.eqpModifier === m.id ? 'default' : 'outline'}
+                        className="flex-1 h-12"
+                        onClick={() => updateFormData({ eqpModifier: m.id as any })}
+                      >
+                        {m.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase">2. Add-ons (Multiple allowed)</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card 
+                      className={`cursor-pointer transition-all border-2 flex items-center p-4 gap-3 ${formData.isHalfMOQ ? 'border-primary bg-primary/10' : 'border-transparent'}`}
+                      onClick={() => updateFormData({ isHalfMOQ: !formData.isHalfMOQ })}
+                    >
+                      <Checkbox checked={formData.isHalfMOQ} />
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold">Half MOQ</p>
+                        <p className="text-[10px] text-muted-foreground">Apply half minimum order quantity</p>
+                      </div>
+                    </Card>
+                    <Card 
+                      className={`cursor-pointer transition-all border-2 flex items-center p-4 gap-3 ${formData.isHalfSetupCharge ? 'border-primary bg-primary/10' : 'border-transparent'}`}
+                      onClick={() => updateFormData({ isHalfSetupCharge: !formData.isHalfSetupCharge })}
+                    >
+                      <Checkbox checked={formData.isHalfSetupCharge} />
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold">Half Setup Charge</p>
+                        <p className="text-[10px] text-muted-foreground">Reduce setup fees by 50%</p>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <div className="bg-white p-3 rounded-lg border shadow-sm flex justify-between items-center">
+                    <span className="text-xs font-medium text-muted-foreground">Generated Rule:</span>
+                    <Badge variant="secondary" className="font-mono text-sm px-3 py-1">
+                      EQP
+                      {formData.eqpModifier === 'MINUS_3' && ' - 3%'}
+                      {formData.eqpModifier === 'MINUS_5' && ' - 5%'}
+                      {formData.isHalfMOQ && ', Half MOQ'}
+                      {formData.isHalfSetupCharge && ', Half Setup Charge'}
+                    </Badge>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             <Separator />
 
@@ -270,7 +346,17 @@ export function DiscountWizard({ onSave, onCancel }: DiscountWizardProps) {
               <div className="grid grid-cols-2 gap-y-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Logic</p>
-                  <p className="font-medium">{formData.logic}</p>
+                  <p className="font-medium">
+                    {formData.logic === 'EQP' ? (
+                      <span className="flex items-center gap-1">
+                        EQP
+                        {formData.eqpModifier === 'MINUS_3' && ' - 3%'}
+                        {formData.eqpModifier === 'MINUS_5' && ' - 5%'}
+                        {formData.isHalfMOQ && ', Half MOQ'}
+                        {formData.isHalfSetupCharge && ', Half Setup Charge'}
+                      </span>
+                    ) : formData.logic}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Scope</p>

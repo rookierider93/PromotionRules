@@ -109,9 +109,32 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
                       {rule.type === 'PROMOTION' ? 'Promo' : 'Group'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs font-mono">{rule.logic}</TableCell>
+                  <TableCell className="text-xs font-mono">
+                    {rule.logic === 'EQP' ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold">EQP</span>
+                        <div className="flex flex-wrap gap-1">
+                          {rule.eqpModifier && rule.eqpModifier !== 'NONE' && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">
+                              {rule.eqpModifier === 'MINUS_3' ? '-3%' : '-5%'}
+                            </Badge>
+                          )}
+                          {rule.isHalfMOQ && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">1/2 MOQ</Badge>
+                          )}
+                          {rule.isHalfSetupCharge && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1">1/2 Setup</Badge>
+                          )}
+                        </div>
+                      </div>
+                    ) : rule.logic}
+                  </TableCell>
                   <TableCell className="font-bold">
-                    {rule.logic.includes('PERCENTAGE') ? `${rule.value}%` : `$${rule.value}`}
+                    {rule.logic === 'EQP' ? (
+                      <span className="text-muted-foreground font-normal italic">Tiered</span>
+                    ) : (
+                      rule.logic.includes('PERCENTAGE') ? `${rule.value}%` : `$${rule.value}`
+                    )}
                   </TableCell>
                   <TableCell>
                     {rule.promoCode ? (

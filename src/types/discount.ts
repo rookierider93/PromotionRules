@@ -19,6 +19,11 @@ export interface DiscountRule {
   description?: string;
   logic: DiscountLogic;
   value: number;
+  // EQP Specific Modifiers
+  eqpModifier?: 'NONE' | 'MINUS_3' | 'MINUS_5';
+  isHalfMOQ?: boolean;
+  isHalfSetupCharge?: boolean;
+  
   minOrderAmount?: number;
   promoCode?: string;
   scope: DiscountScope;
