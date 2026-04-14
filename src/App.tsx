@@ -11,19 +11,29 @@ import {
   HelpCircle, 
   Bell,
   Search,
-  Menu
+  Menu,
+  Info,
+  Store,
+  ChevronDown,
+  BarChart3,
+  Package,
+  Users,
+  Zap,
+  User,
+  SlidersHorizontal,
+  Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DiscountTable } from './components/DiscountTable';
-import { DiscountWizard } from './components/DiscountWizard';
+import { UnifiedDiscountForm } from './components/UnifiedDiscountForm';
 import { MOCK_RULES } from './mockData';
 import { DiscountRule } from './types/discount';
 
 export default function App() {
   const [rules, setRules] = React.useState<DiscountRule[]>(MOCK_RULES);
-  const [isWizardOpen, setIsWizardOpen] = React.useState(false);
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingRule, setEditingRule] = React.useState<DiscountRule | null>(null);
 
   const handleSaveRule = (ruleData: Partial<DiscountRule>) => {
@@ -37,77 +47,113 @@ export default function App() {
       } as DiscountRule;
       setRules(prev => [newRule, ...prev]);
     }
-    setIsWizardOpen(false);
+    setIsFormOpen(false);
     setEditingRule(null);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
+    <div className="min-h-screen bg-background flex flex-col font-sans text-foreground">
       {/* Top Navigation Bar */}
-      <header className="h-16 border-bottom bg-white flex items-center justify-between px-6 shadow-sm z-10">
-        <div className="flex items-center gap-4">
-          <div className="bg-primary p-1.5 rounded-lg">
-            <LayoutDashboard className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">Discount Engine <span className="text-primary">Pro</span></h1>
+      <header className="h-16 border-b bg-white flex items-center justify-between px-6 z-10">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-medium text-slate-700 flex items-center gap-2">
+            Discount Management
+            <Info className="w-4 h-4 text-slate-400 cursor-help" />
+          </h1>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input 
-              className="bg-slate-100 border-none rounded-full pl-9 pr-4 py-2 text-sm w-64 focus:ring-2 focus:ring-primary outline-none transition-all"
-              placeholder="Quick search..."
-            />
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 bg-slate-50 border rounded-md px-3 py-1.5">
+            <span className="text-xs font-medium text-slate-600">Take a tour</span>
+            <div className="w-8 h-4 bg-slate-200 rounded-full relative cursor-pointer">
+              <div className="absolute right-1 top-1 w-2 h-2 bg-slate-400 rounded-full" />
+            </div>
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="w-5 h-5" />
+          
+          <Button variant="ghost" size="icon" className="text-slate-600">
+            <Store className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Settings className="w-5 h-5" />
-          </Button>
-          <div className="w-8 h-8 rounded-full bg-slate-200 border border-slate-300 flex items-center justify-center overflow-hidden">
-            <img src="https://picsum.photos/seed/user/32/32" alt="User" referrerPolicy="no-referrer" />
+          
+          <div className="flex items-center gap-3 pl-4 border-l">
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex items-center gap-1 cursor-pointer">
+              <span className="text-sm font-medium text-slate-700">Hi, RohanBait</span>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            </div>
           </div>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-64 border-right bg-white hidden lg:flex flex-col p-4 gap-2">
-          <Button variant="ghost" className="justify-start gap-3 bg-slate-100 text-primary font-semibold">
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
-          </Button>
-          <Button variant="ghost" className="justify-start gap-3 text-slate-600">
-            <Plus className="w-5 h-5" />
-            Create Rule
-          </Button>
-          <div className="mt-auto p-4 bg-primary/5 rounded-xl border border-primary/10">
-            <p className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Need Help?</p>
-            <p className="text-xs text-slate-600 mb-3">Learn how to combine promotion rules with custom groups.</p>
-            <Button variant="outline" size="sm" className="w-full text-xs gap-2">
-              <HelpCircle className="w-3 h-3" />
-              Documentation
+        {/* Sidebar - Narrow style from screenshot */}
+        <aside className="w-16 border-r bg-white flex flex-col items-center py-6 gap-6">
+          <div className="mb-4">
+            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Zap className="w-6 h-6 text-primary" />
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-6">
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Menu className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <BarChart3 className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Package className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Settings className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Users className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Zap className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <User className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-primary bg-primary/5">
+              <SlidersHorizontal className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Package className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-primary">
+              <Globe className="w-5 h-5" />
             </Button>
           </div>
         </aside>
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto p-6 lg:p-10">
-          <div className="max-w-6xl mx-auto space-y-8">
+          <div className="max-w-7xl mx-auto space-y-8">
             
-            {isWizardOpen ? (
+            {isFormOpen ? (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center gap-4 mb-6">
-                  <Button variant="ghost" onClick={() => setIsWizardOpen(false)}>
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
+                      {editingRule ? 'Edit Discount Rule' : 'Create New Discount Rule'}
+                    </h2>
+                    <p className="text-slate-500 mt-1">Configure your dynamic EQP or Flat discount logic below.</p>
+                  </div>
+                  <Button variant="ghost" onClick={() => setIsFormOpen(false)}>
                     <Menu className="w-4 h-4 mr-2" />
                     Back to Dashboard
                   </Button>
                 </div>
-                <DiscountWizard 
+                <UnifiedDiscountForm 
+                  initialData={editingRule || undefined}
                   onSave={handleSaveRule} 
-                  onCancel={() => setIsWizardOpen(false)} 
+                  onCancel={() => {
+                    setIsFormOpen(false);
+                    setEditingRule(null);
+                  }} 
                 />
               </div>
             ) : (
@@ -118,7 +164,7 @@ export default function App() {
                     <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Discount Management</h2>
                     <p className="text-slate-500 mt-1">Manage all your promotion codes and customer-specific discounts in one unified system.</p>
                   </div>
-                  <Button size="lg" className="shadow-lg shadow-primary/20" onClick={() => setIsWizardOpen(true)}>
+                  <Button size="lg" className="shadow-lg shadow-primary/20" onClick={() => setIsFormOpen(true)}>
                     <Plus className="w-5 h-5 mr-2" />
                     New Rule
                   </Button>
@@ -166,38 +212,38 @@ export default function App() {
                   <div className="flex items-center justify-between mb-4">
                     <TabsList className="bg-white border shadow-sm">
                       <TabsTrigger value="all">All Rules</TabsTrigger>
-                      <TabsTrigger value="promotions">Promotions</TabsTrigger>
-                      <TabsTrigger value="groups">Custom Groups</TabsTrigger>
+                      <TabsTrigger value="product">Product Rules</TabsTrigger>
+                      <TabsTrigger value="order">Order Rules</TabsTrigger>
                     </TabsList>
                   </div>
                   
                   <TabsContent value="all" className="mt-0">
                     <DiscountTable 
                       rules={rules} 
-                      onAddRule={() => setIsWizardOpen(true)} 
+                      onAddRule={() => setIsFormOpen(true)} 
                       onEditRule={(r) => {
                         setEditingRule(r);
-                        setIsWizardOpen(true);
+                        setIsFormOpen(true);
                       }}
                     />
                   </TabsContent>
-                  <TabsContent value="promotions" className="mt-0">
+                  <TabsContent value="product" className="mt-0">
                     <DiscountTable 
-                      rules={rules.filter(r => r.type === 'PROMOTION')} 
-                      onAddRule={() => setIsWizardOpen(true)} 
+                      rules={rules.filter(r => r.type === 'PRODUCT')} 
+                      onAddRule={() => setIsFormOpen(true)} 
                       onEditRule={(r) => {
                         setEditingRule(r);
-                        setIsWizardOpen(true);
+                        setIsFormOpen(true);
                       }}
                     />
                   </TabsContent>
-                  <TabsContent value="groups" className="mt-0">
+                  <TabsContent value="order" className="mt-0">
                     <DiscountTable 
-                      rules={rules.filter(r => r.type === 'CUSTOM_GROUP')} 
-                      onAddRule={() => setIsWizardOpen(true)} 
+                      rules={rules.filter(r => r.type === 'ORDER')} 
+                      onAddRule={() => setIsFormOpen(true)} 
                       onEditRule={(r) => {
                         setEditingRule(r);
-                        setIsWizardOpen(true);
+                        setIsFormOpen(true);
                       }}
                     />
                   </TabsContent>

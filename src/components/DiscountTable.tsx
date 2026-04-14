@@ -9,7 +9,8 @@ import {
   Calendar,
   CheckCircle2,
   XCircle,
-  ArrowUpDown
+  ArrowUpDown,
+  Edit2
 } from 'lucide-react';
 import { 
   Table, 
@@ -68,8 +69,8 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All Types</SelectItem>
-              <SelectItem value="PROMOTION">Promotions</SelectItem>
-              <SelectItem value="CUSTOM_GROUP">Custom Groups</SelectItem>
+              <SelectItem value="PRODUCT">Product Rules</SelectItem>
+              <SelectItem value="ORDER">Order Rules</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -79,107 +80,112 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
         </Button>
       </div>
 
-      <div className="rounded-md border bg-card">
+      <div className="rounded-lg overflow-hidden border shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-[250px]">Rule Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Logic</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Promo Code</TableHead>
-              <TableHead>Validity</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="bg-secondary hover:bg-secondary border-none">
+              <TableHead className="text-white font-bold h-12">Rule Name</TableHead>
+              <TableHead className="text-white font-bold h-12">Type</TableHead>
+              <TableHead className="text-white font-bold h-12">Logic</TableHead>
+              <TableHead className="text-white font-bold h-12">Value</TableHead>
+              <TableHead className="text-white font-bold h-12">Promo Code</TableHead>
+              <TableHead className="text-white font-bold h-12">Validity</TableHead>
+              <TableHead className="text-white font-bold h-12">Status</TableHead>
+              <TableHead className="text-white font-bold h-12 text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {filteredRules.length > 0 ? (
-              filteredRules.map((rule) => (
-                <TableRow key={rule.id} className="hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>{rule.name}</span>
-                      <span className="text-xs text-muted-foreground font-normal line-clamp-1">{rule.description}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={rule.type === 'PROMOTION' ? 'default' : 'secondary'} className="gap-1">
-                      {rule.type === 'PROMOTION' ? <Tag className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-                      {rule.type === 'PROMOTION' ? 'Promo' : 'Group'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs font-mono">
-                    {rule.logic === 'EQP' ? (
-                      <div className="flex flex-col gap-1">
-                        <span className="font-bold">EQP</span>
-                        <div className="flex flex-wrap gap-1">
-                          {rule.eqpModifier && rule.eqpModifier !== 'NONE' && (
-                            <Badge variant="outline" className="text-[10px] h-4 px-1">
-                              {rule.eqpModifier === 'MINUS_3' ? '-3%' : '-5%'}
-                            </Badge>
-                          )}
-                          {rule.isHalfMOQ && (
-                            <Badge variant="outline" className="text-[10px] h-4 px-1">1/2 MOQ</Badge>
-                          )}
-                          {rule.isHalfSetupCharge && (
-                            <Badge variant="outline" className="text-[10px] h-4 px-1">1/2 Setup</Badge>
-                          )}
-                        </div>
-                      </div>
-                    ) : rule.logic}
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {rule.logic === 'EQP' ? (
-                      <span className="text-muted-foreground font-normal italic">Tiered</span>
-                    ) : (
-                      rule.logic.includes('PERCENTAGE') ? `${rule.value}%` : `$${rule.value}`
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {rule.promoCode ? (
-                      <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-bold text-primary">
-                        {rule.promoCode}
-                      </code>
-                    ) : (
-                      <span className="text-muted-foreground text-xs italic">Automatic</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Calendar className="w-3 h-3" />
-                      <span>{new Date(rule.endDate).toLocaleDateString()}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {rule.status === 'ACTIVE' ? (
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Active
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50 gap-1">
-                        <XCircle className="w-3 h-3" />
-                        Inactive
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => onEditRule(rule)}>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  No rules found matching your criteria.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
         </Table>
+      </div>
+
+      <div className="space-y-3 mt-4">
+        {filteredRules.length > 0 ? (
+          filteredRules.map((rule) => (
+            <div 
+              key={rule.id} 
+              className="bg-white rounded-lg p-4 flex items-center justify-between shadow-sm border border-transparent hover:border-primary/20 transition-all"
+            >
+              <div className="grid grid-cols-8 w-full items-center gap-4">
+                <div className="col-span-1 font-medium">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-700">{rule.name}</span>
+                    <span className="text-[10px] text-slate-400 font-normal line-clamp-1">{rule.description}</span>
+                  </div>
+                </div>
+                
+                <div className="col-span-1">
+                  <Badge variant={rule.type === 'PRODUCT' ? 'default' : 'secondary'} className="gap-1 text-[10px] px-2 py-0">
+                    {rule.type === 'PRODUCT' ? <Tag className="w-3 h-3" /> : <Users className="w-3 h-3" />}
+                    {rule.type === 'PRODUCT' ? 'Product' : 'Order'}
+                  </Badge>
+                </div>
+
+                <div className="col-span-1 text-xs font-mono text-slate-500">
+                  {rule.baseType === 'EQP' ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-slate-700">EQP</span>
+                      <div className="flex flex-wrap gap-1">
+                        {rule.eqpModifier !== 'NONE' && (
+                          <span className="text-[9px] bg-slate-100 px-1 rounded">-{rule.eqpModifier}</span>
+                        )}
+                        {rule.moqOption !== 'NONE' && (
+                          <span className="text-[9px] bg-slate-100 px-1 rounded">{rule.moqOption === 'HALF' ? '1/2' : 'Full'} MOQ</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="font-bold text-slate-700">Flat</span>
+                  )}
+                </div>
+
+                <div className="col-span-1 font-bold text-sm">
+                  {rule.baseType === 'EQP' ? (
+                    <span className="text-slate-400 font-normal italic text-xs">Tiered</span>
+                  ) : (
+                    `$${rule.value}`
+                  )}
+                </div>
+
+                <div className="col-span-1">
+                  {rule.promoCode ? (
+                    <code className="text-primary font-bold text-xs">{rule.promoCode}</code>
+                  ) : (
+                    <span className="text-slate-400 text-[10px] italic">Auto</span>
+                  )}
+                </div>
+
+                <div className="col-span-1">
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                    <Calendar className="w-3 h-3" />
+                    <span>{new Date(rule.endDate).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="col-span-1">
+                  {rule.status === 'ACTIVE' ? (
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-[10px] px-2 py-0">Active</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50 text-[10px] px-2 py-0">Inactive</Badge>
+                  )}
+                </div>
+
+                <div className="col-span-1 text-right">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-primary hover:bg-primary/10"
+                    onClick={() => onEditRule(rule)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="bg-white rounded-lg p-12 text-center text-slate-400 border-2 border-dashed">
+            No rules found matching your criteria.
+          </div>
+        )}
       </div>
     </div>
   );

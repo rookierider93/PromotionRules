@@ -1,4 +1,4 @@
-export type DiscountType = 'PROMOTION' | 'CUSTOM_GROUP';
+export type DiscountType = 'PRODUCT' | 'ORDER';
 
 export type DiscountLogic = 
   | 'PERCENTAGE' 
@@ -10,7 +10,7 @@ export type DiscountLogic =
   | 'SPEND_X_SAVE_Y_AMOUNT'
   | 'SPEND_X_SAVE_Y_PERCENT';
 
-export type DiscountScope = 'SITEWIDE' | 'CATEGORY' | 'PRODUCT';
+export type DiscountScope = 'SITEWIDE' | 'CATEGORY' | 'PRODUCT' | 'CUSTOMER_GROUP';
 
 export interface DiscountRule {
   id: string;
@@ -19,10 +19,11 @@ export interface DiscountRule {
   description?: string;
   logic: DiscountLogic;
   value: number;
-  // EQP Specific Modifiers
-  eqpModifier?: 'NONE' | 'MINUS_3' | 'MINUS_5';
-  isHalfMOQ?: boolean;
-  isHalfSetupCharge?: boolean;
+  // Unified Discount Structure
+  baseType: 'EQP' | 'FLAT_DISCOUNT';
+  eqpModifier: string; // 'NONE', '3%', '5%', or custom like '10%'
+  moqOption: 'NONE' | 'HALF' | 'FULL';
+  setupOption: 'NONE' | 'HALF' | 'FULL';
   
   minOrderAmount?: number;
   promoCode?: string;
