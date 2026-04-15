@@ -12,18 +12,40 @@ export type DiscountLogic =
 
 export type DiscountScope = 'SITEWIDE' | 'CATEGORY' | 'PRODUCT' | 'CUSTOMER_GROUP';
 
+export interface TieredFlatDiscount {
+  minOrderAmount: number;
+  discountAmount: number;
+}
+
 export interface DiscountRule {
   id: string;
-  type: DiscountType;
   name: string;
   description?: string;
   logic: DiscountLogic;
   value: number;
   // Unified Discount Structure
-  baseType: 'EQP' | 'FLAT_DISCOUNT';
+  isAutomatic: boolean;
+  isProductLevel: boolean;
+  baseType: 'EQP' | 'FLAT_DISCOUNT' | 'SHIPPING_DISCOUNT';
   eqpModifier: string; // 'NONE', '3%', '5%', or custom like '10%'
   moqOption: 'NONE' | 'HALF' | 'FULL';
   setupOption: 'NONE' | 'HALF' | 'FULL';
+  
+  // Flat Discount Specifics
+  flatDiscountType?: 'PERCENTAGE' | 'AMOUNT';
+  maxDiscountAmount?: number;
+  applyOnBasketPrice?: boolean;
+  tieredFlatDiscounts?: TieredFlatDiscount[];
+  
+  // Shipping Discount Specifics
+  shippingDiscountType?: 'PERCENTAGE' | 'AMOUNT' | 'FREE';
+  shippingMethod?: string;
+  
+  // Targeting & Validity Specifics
+  applyOnFirstTimeBuyer?: boolean;
+  promoCodeUseOneTime?: boolean;
+  applyOnItemPrice?: boolean;
+  applyOnItemPlusCharges?: boolean;
   
   minOrderAmount?: number;
   promoCode?: string;

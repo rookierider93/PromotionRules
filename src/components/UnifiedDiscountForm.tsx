@@ -8,7 +8,9 @@ import {
   Calendar, 
   Target,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +19,13 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { DiscountRule, DiscountScope } from '@/src/types/discount';
 
 interface UnifiedDiscountFormProps {
@@ -27,7 +36,8 @@ interface UnifiedDiscountFormProps {
 
 export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDiscountFormProps) {
   const [formData, setFormData] = React.useState<Partial<DiscountRule>>({
-    type: 'PRODUCT',
+    isAutomatic: false,
+    isProductLevel: false,
     baseType: 'EQP',
     eqpModifier: 'NONE',
     moqOption: 'NONE',
@@ -37,6 +47,15 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[1] || '2026-12-31',
     value: 0,
+    flatDiscountType: 'AMOUNT',
+    tieredFlatDiscounts: [{ minOrderAmount: 0, discountAmount: 0 }],
+    applyOnBasketPrice: false,
+    shippingDiscountType: 'FREE',
+    shippingMethod: 'all',
+    applyOnFirstTimeBuyer: false,
+    promoCodeUseOneTime: false,
+    applyOnItemPrice: false,
+    applyOnItemPlusCharges: false,
     ...initialData
   });
 
@@ -45,8 +64,22 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
   };
 
   const generateRuleString = () => {
+    if (formData.baseType === 'SHIPPING_DISCOUNT') {
+      const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
+                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
+                   `$${formData.value} Off Shipping`;
+      return `${type}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+    }
+    
     if (formData.baseType === 'FLAT_DISCOUNT') {
-      return `Flat Discount ($${formData.value || 0})`;
+      if (formData.flatDiscountType === 'PERCENTAGE') {
+        return `${formData.value || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
+      }
+      const tiers = formData.tieredFlatDiscounts || [];
+      if (tiers.length === 1) {
+        return `$${tiers[0].discountAmount} Flat Discount${tiers[0].minOrderAmount ? ` (Min $${tiers[0].minOrderAmount})` : ''}`;
+      }
+      return `${tiers.length} Tiered Flat Discount`;
     }
     
     let parts = ['EQP'];
@@ -79,26 +112,8 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                 <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">1</span>
                 General Information
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Rule Type</Label>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant={formData.type === 'PRODUCT' ? 'default' : 'outline'}
-                      className="flex-1"
-                      onClick={() => updateFormData({ type: 'PRODUCT' })}
-                    >
-                      Product
-                    </Button>
-                    <Button 
-                      variant={formData.type === 'ORDER' ? 'default' : 'outline'}
-                      className="flex-1"
-                      onClick={() => updateFormData({ type: 'ORDER' })}
-                    >
-                      Order
-                    </Button>
-                  </div>
-                </div>
+              
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Rule Name</Label>
                   <Input 
@@ -107,6 +122,56 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                     value={formData.name || ''} 
                     onChange={e => updateFormData({ name: e.target.value })}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Discount Method</Label>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant={!formData.isAutomatic ? 'default' : 'outline'}
+                      className="flex-1"
+                      onClick={() => updateFormData({ isAutomatic: false, isProductLevel: false })}
+                    >
+                      Discount Code
+                    </Button>
+                    <Button 
+                      variant={formData.isAutomatic ? 'default' : 'outline'}
+                      className="flex-1"
+                      onClick={() => updateFormData({ isAutomatic: true })}
+                    >
+                      Automatic Discount
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {!formData.isAutomatic ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="promoCode">Discount Code</Label>
+                      <Input 
+                        id="promoCode" 
+                        placeholder="SUMMER2026" 
+                        value={formData.promoCode || ''} 
+                        onChange={e => updateFormData({ promoCode: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-end pb-2">
+                      <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border w-full">
+                        <Checkbox 
+                          id="productLevel" 
+                          checked={formData.isProductLevel}
+                          onCheckedChange={(checked) => updateFormData({ 
+                            isProductLevel: !!checked,
+                            baseType: checked && formData.baseType === 'SHIPPING_DISCOUNT' ? 'EQP' : formData.baseType
+                          })}
+                        />
+                        <Label htmlFor="productLevel" className="text-sm font-medium leading-none cursor-pointer">
+                          Is Product Level Discount
+                        </Label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -123,25 +188,82 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
               <div className="space-y-6">
                 <div className="space-y-3">
                   <Label className="text-muted-foreground">Base Discount</Label>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap gap-4">
                     <Button 
                       variant={formData.baseType === 'EQP' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-lg font-bold"
+                      className="flex-1 h-16 text-lg font-bold min-w-[140px]"
                       onClick={() => updateFormData({ baseType: 'EQP' })}
                     >
                       EQP
                     </Button>
                     <Button 
                       variant={formData.baseType === 'FLAT_DISCOUNT' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-lg font-bold"
+                      className="flex-1 h-16 text-lg font-bold min-w-[140px]"
                       onClick={() => updateFormData({ baseType: 'FLAT_DISCOUNT' })}
                     >
                       Flat Discount
                     </Button>
+                    {!formData.isProductLevel && (
+                      <Button 
+                        variant={formData.baseType === 'SHIPPING_DISCOUNT' ? 'default' : 'outline'}
+                        className="flex-1 h-16 text-lg font-bold min-w-[140px]"
+                        onClick={() => updateFormData({ baseType: 'SHIPPING_DISCOUNT' })}
+                      >
+                        Shipping Discount
+                      </Button>
+                    )}
                   </div>
                 </div>
 
-                {formData.baseType === 'EQP' ? (
+                {!formData.isProductLevel && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* MOQ Add-on */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-bold">MOQ Add-on</Label>
+                        <Badge variant={formData.moqOption !== 'NONE' ? 'default' : 'outline'}>
+                          {formData.moqOption !== 'NONE' ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-2">
+                        {['NONE', 'HALF', 'FULL'].map((opt) => (
+                          <Button
+                            key={opt}
+                            variant={formData.moqOption === opt ? 'secondary' : 'outline'}
+                            className={`flex-1 text-xs ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                            onClick={() => updateFormData({ moqOption: opt as any })}
+                          >
+                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Setup Charge Add-on */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-bold">Setup Charge Add-on</Label>
+                        <Badge variant={formData.setupOption !== 'NONE' ? 'default' : 'outline'}>
+                          {formData.setupOption !== 'NONE' ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-2">
+                        {['NONE', 'HALF', 'FULL'].map((opt) => (
+                          <Button
+                            key={opt}
+                            variant={formData.setupOption === opt ? 'secondary' : 'outline'}
+                            className={`flex-1 text-xs ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                            onClick={() => updateFormData({ setupOption: opt as any })}
+                          >
+                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {formData.baseType === 'EQP' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -183,68 +305,243 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                       </div>
                     </div>
                   </motion.div>
-                ) : (
+                )}
+
+                {formData.baseType === 'SHIPPING_DISCOUNT' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="space-y-4 p-6 bg-slate-50 rounded-xl border"
+                    className="space-y-6 p-6 bg-slate-50 rounded-xl border"
                   >
-                    <Label className="text-xs font-bold uppercase text-slate-500">Discount Amount ($)</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="bg-white text-xl font-bold h-12"
-                      value={formData.value || ''} 
-                      onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold uppercase text-slate-500">Shipping Discount Configuration</Label>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0.00" 
+                          className="bg-white"
+                          value={formData.minOrderAmount || ''} 
+                          onChange={e => updateFormData({ minOrderAmount: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500">Shipping Method</Label>
+                        <Select 
+                          value={formData.shippingMethod} 
+                          onValueChange={(val) => updateFormData({ shippingMethod: val })}
+                        >
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Select method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Shipping Methods</SelectItem>
+                            <SelectItem value="standard">Standard Shipping</SelectItem>
+                            <SelectItem value="express">Express Shipping</SelectItem>
+                            <SelectItem value="overnight">Overnight Shipping</SelectItem>
+                            <SelectItem value="international">International Shipping</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updateFormData({ shippingDiscountType: 'FREE', value: 0 })}
+                        >
+                          Free Shipping
+                        </Button>
+                        <Button 
+                          variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
+                        >
+                          Amount ($)
+                        </Button>
+                        <Button 
+                          variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
+                        >
+                          Percentage (%)
+                        </Button>
+                      </div>
+                    </div>
+
+                    {formData.shippingDiscountType !== 'FREE' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500">
+                          {formData.shippingDiscountType === 'AMOUNT' ? 'Discount Amount ($)' : 'Discount Percentage (%)'}
+                        </Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0.00" 
+                          className="bg-white text-xl font-bold h-12"
+                          value={formData.value || ''} 
+                          onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
+                        />
+                      </div>
+                    )}
                   </motion.div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* MOQ Add-on */}
-                  <div className="space-y-4">
+                {formData.baseType === 'FLAT_DISCOUNT' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6 p-6 bg-slate-50 rounded-xl border"
+                  >
                     <div className="flex items-center justify-between">
-                      <Label className="font-bold">MOQ Add-on</Label>
-                      <Badge variant={formData.moqOption !== 'NONE' ? 'default' : 'outline'}>
-                        {formData.moqOption !== 'NONE' ? 'Enabled' : 'Disabled'}
-                      </Badge>
+                      <Label className="text-xs font-bold uppercase text-slate-500">Flat Discount Configuration</Label>
+                      {!formData.isProductLevel && (
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="basketPrice" 
+                            checked={formData.applyOnBasketPrice}
+                            onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
+                          />
+                          <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2">
-                      {['NONE', 'HALF', 'FULL'].map((opt) => (
-                        <Button
-                          key={opt}
-                          variant={formData.moqOption === opt ? 'secondary' : 'outline'}
-                          className={`flex-1 text-xs ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                          onClick={() => updateFormData({ moqOption: opt as any })}
-                        >
-                          {opt.charAt(0) + opt.slice(1).toLowerCase()}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Setup Charge Add-on */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold">Setup Charge Add-on</Label>
-                      <Badge variant={formData.setupOption !== 'NONE' ? 'default' : 'outline'}>
-                        {formData.setupOption !== 'NONE' ? 'Enabled' : 'Disabled'}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      {['NONE', 'HALF', 'FULL'].map((opt) => (
-                        <Button
-                          key={opt}
-                          variant={formData.setupOption === opt ? 'secondary' : 'outline'}
-                          className={`flex-1 text-xs ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                          onClick={() => updateFormData({ setupOption: opt as any })}
-                        >
-                          {opt.charAt(0) + opt.slice(1).toLowerCase()}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                    {formData.isProductLevel ? (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500">Discount Percentage (%)</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          className="bg-white text-xl font-bold h-12"
+                          value={formData.value || ''} 
+                          onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0, flatDiscountType: 'PERCENTAGE' })}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant={formData.flatDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => updateFormData({ flatDiscountType: 'AMOUNT' })}
+                            >
+                              Amount ($)
+                            </Button>
+                            <Button 
+                              variant={formData.flatDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => updateFormData({ flatDiscountType: 'PERCENTAGE' })}
+                            >
+                              Percentage (%)
+                            </Button>
+                          </div>
+                        </div>
+
+                        {formData.flatDiscountType === 'PERCENTAGE' ? (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-xs font-bold text-slate-500">Percentage (%)</Label>
+                              <Input 
+                                type="number" 
+                                placeholder="0" 
+                                className="bg-white"
+                                value={formData.value || ''} 
+                                onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs font-bold text-slate-500">Max Discount Amount ($)</Label>
+                              <Input 
+                                type="number" 
+                                placeholder="0.00" 
+                                className="bg-white"
+                                value={formData.maxDiscountAmount || ''} 
+                                onChange={e => updateFormData({ maxDiscountAmount: parseFloat(e.target.value) || 0 })}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {formData.tieredFlatDiscounts?.map((tier, index) => (
+                              <div key={index} className="flex items-end gap-3">
+                                <div className="flex-1 space-y-2">
+                                  <Label className="text-[10px] font-bold text-slate-400 uppercase">Min Order Amount ($)</Label>
+                                  <Input 
+                                    type="number" 
+                                    placeholder="0.00" 
+                                    className="bg-white"
+                                    value={tier.minOrderAmount} 
+                                    onChange={e => {
+                                      const newTiers = [...(formData.tieredFlatDiscounts || [])];
+                                      newTiers[index] = { ...newTiers[index], minOrderAmount: parseFloat(e.target.value) || 0 };
+                                      updateFormData({ tieredFlatDiscounts: newTiers });
+                                    }}
+                                  />
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                  <Label className="text-[10px] font-bold text-slate-400 uppercase">Discount Amount ($)</Label>
+                                  <Input 
+                                    type="number" 
+                                    placeholder="0.00" 
+                                    className="bg-white"
+                                    value={tier.discountAmount} 
+                                    onChange={e => {
+                                      const newTiers = [...(formData.tieredFlatDiscounts || [])];
+                                      newTiers[index] = { ...newTiers[index], discountAmount: parseFloat(e.target.value) || 0 };
+                                      updateFormData({ tieredFlatDiscounts: newTiers });
+                                    }}
+                                  />
+                                </div>
+                                {index > 0 && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                    onClick={() => {
+                                      const newTiers = formData.tieredFlatDiscounts?.filter((_, i) => i !== index);
+                                      updateFormData({ tieredFlatDiscounts: newTiers });
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full border-dashed border-2 hover:bg-slate-100"
+                              onClick={() => {
+                                updateFormData({ 
+                                  tieredFlatDiscounts: [
+                                    ...(formData.tieredFlatDiscounts || []), 
+                                    { minOrderAmount: 0, discountAmount: 0 }
+                                  ] 
+                                });
+                              }}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Tier
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </motion.div>
+                )}
               </div>
             </div>
 
@@ -304,6 +601,52 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   </div>
                 </div>
               </div>
+
+              <Separator className="opacity-50" />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="firstTimeBuyer" 
+                      checked={formData.applyOnFirstTimeBuyer}
+                      onCheckedChange={(checked) => updateFormData({ applyOnFirstTimeBuyer: !!checked })}
+                    />
+                    <Label htmlFor="firstTimeBuyer" className="text-sm font-medium cursor-pointer">Apply On First-Time Buyer</Label>
+                  </div>
+
+                  {!formData.isAutomatic && (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="oneTimeUse" 
+                        checked={formData.promoCodeUseOneTime}
+                        onCheckedChange={(checked) => updateFormData({ promoCodeUseOneTime: !!checked })}
+                      />
+                      <Label htmlFor="oneTimeUse" className="text-sm font-medium cursor-pointer">PromoCode Use One Time</Label>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="itemPrice" 
+                      checked={formData.applyOnItemPrice}
+                      onCheckedChange={(checked) => updateFormData({ applyOnItemPrice: !!checked })}
+                    />
+                    <Label htmlFor="itemPrice" className="text-sm font-medium cursor-pointer">Apply On Item Price</Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="itemPlusCharges" 
+                      checked={formData.applyOnItemPlusCharges}
+                      onCheckedChange={(checked) => updateFormData({ applyOnItemPlusCharges: !!checked })}
+                    />
+                    <Label htmlFor="itemPlusCharges" className="text-sm font-medium cursor-pointer">Apply On Item + Charges</Label>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -332,11 +675,19 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-400">Type</span>
+                <span className="text-xs text-slate-400">Method</span>
                 <Badge variant="secondary" className="bg-slate-700 text-slate-200 border-none">
-                  {formData.type === 'PRODUCT' ? 'Product' : 'Order'}
+                  {formData.isAutomatic ? 'Automatic' : 'Code'}
                 </Badge>
               </div>
+              {formData.isAutomatic && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400">Level</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">
+                    {formData.isProductLevel ? 'Product' : 'Order'}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400">Scope</span>
                 <span className="text-xs font-bold uppercase tracking-wider">{formData.scope?.replace('_', ' ')}</span>

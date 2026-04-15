@@ -45,8 +45,7 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
   const filteredRules = rules.filter(rule => {
     const matchesSearch = rule.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          rule.promoCode?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'ALL' || rule.type === typeFilter;
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   return (
@@ -62,17 +61,6 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Types</SelectItem>
-              <SelectItem value="PRODUCT">Product Rules</SelectItem>
-              <SelectItem value="ORDER">Order Rules</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
         <Button onClick={onAddRule}>
           <Plus className="w-4 h-4 mr-2" />
@@ -84,8 +72,7 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary border-none">
-              <TableHead className="text-white font-bold h-12">Rule Name</TableHead>
-              <TableHead className="text-white font-bold h-12">Type</TableHead>
+              <TableHead className="text-white font-bold h-12 col-span-2">Rule Name</TableHead>
               <TableHead className="text-white font-bold h-12">Logic</TableHead>
               <TableHead className="text-white font-bold h-12">Value</TableHead>
               <TableHead className="text-white font-bold h-12">Promo Code</TableHead>
@@ -104,19 +91,12 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
               key={rule.id} 
               className="bg-white rounded-lg p-4 flex items-center justify-between shadow-sm border border-transparent hover:border-primary/20 transition-all"
             >
-              <div className="grid grid-cols-8 w-full items-center gap-4">
+              <div className="grid grid-cols-7 w-full items-center gap-4">
                 <div className="col-span-1 font-medium">
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-slate-700">{rule.name}</span>
                     <span className="text-[10px] text-slate-400 font-normal line-clamp-1">{rule.description}</span>
                   </div>
-                </div>
-                
-                <div className="col-span-1">
-                  <Badge variant={rule.type === 'PRODUCT' ? 'default' : 'secondary'} className="gap-1 text-[10px] px-2 py-0">
-                    {rule.type === 'PRODUCT' ? <Tag className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-                    {rule.type === 'PRODUCT' ? 'Product' : 'Order'}
-                  </Badge>
                 </div>
 
                 <div className="col-span-1 text-xs font-mono text-slate-500">
@@ -132,24 +112,57 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
                         )}
                       </div>
                     </div>
+                  ) : rule.baseType === 'SHIPPING_DISCOUNT' ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-slate-700">Shipping</span>
+                      <span className="text-[9px] bg-slate-100 px-1 rounded w-fit">
+                        {rule.shippingDiscountType === 'FREE' ? 'Free' : 
+                         rule.shippingDiscountType === 'PERCENTAGE' ? 'Percentage' : 'Amount'}
+                      </span>
+                    </div>
                   ) : (
-                    <span className="font-bold text-slate-700">Flat</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-slate-700">Flat</span>
+                      <span className="text-[9px] bg-slate-100 px-1 rounded w-fit">
+                        {rule.flatDiscountType === 'PERCENTAGE' ? 'Percentage' : 'Amount'}
+                      </span>
+                    </div>
                   )}
                 </div>
 
                 <div className="col-span-1 font-bold text-sm">
                   {rule.baseType === 'EQP' ? (
                     <span className="text-slate-400 font-normal italic text-xs">Tiered</span>
+                  ) : rule.baseType === 'FLAT_DISCOUNT' ? (
+                    rule.flatDiscountType === 'PERCENTAGE' ? (
+                      `${rule.value}%`
+                    ) : (
+                      rule.tieredFlatDiscounts && rule.tieredFlatDiscounts.length > 1 ? (
+                        <span className="text-slate-400 font-normal italic text-xs">Multi-Tier</span>
+                      ) : (
+                        `$${rule.tieredFlatDiscounts?.[0]?.discountAmount || rule.value}`
+                      )
+                    )
+                  ) : rule.baseType === 'SHIPPING_DISCOUNT' ? (
+                    rule.shippingDiscountType === 'FREE' ? (
+                      <span className="text-green-600">FREE</span>
+                    ) : rule.shippingDiscountType === 'PERCENTAGE' ? (
+                      `${rule.value}%`
+                    ) : (
+                      `$${rule.value}`
+                    )
                   ) : (
                     `$${rule.value}`
                   )}
                 </div>
 
                 <div className="col-span-1">
-                  {rule.promoCode ? (
+                  {rule.isAutomatic ? (
+                    <Badge variant="outline" className="text-[10px] border-slate-200 text-slate-500 bg-slate-50">Automatic</Badge>
+                  ) : rule.promoCode ? (
                     <code className="text-primary font-bold text-xs">{rule.promoCode}</code>
                   ) : (
-                    <span className="text-slate-400 text-[10px] italic">Auto</span>
+                    <span className="text-slate-400 text-[10px] italic">No Code</span>
                   )}
                 </div>
 

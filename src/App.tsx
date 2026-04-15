@@ -207,47 +207,17 @@ export default function App() {
                   </Card>
                 </div>
 
-                {/* Main Tabs */}
-                <Tabs defaultValue="all" className="w-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <TabsList className="bg-white border shadow-sm">
-                      <TabsTrigger value="all">All Rules</TabsTrigger>
-                      <TabsTrigger value="product">Product Rules</TabsTrigger>
-                      <TabsTrigger value="order">Order Rules</TabsTrigger>
-                    </TabsList>
-                  </div>
-                  
-                  <TabsContent value="all" className="mt-0">
-                    <DiscountTable 
-                      rules={rules} 
-                      onAddRule={() => setIsFormOpen(true)} 
-                      onEditRule={(r) => {
-                        setEditingRule(r);
-                        setIsFormOpen(true);
-                      }}
-                    />
-                  </TabsContent>
-                  <TabsContent value="product" className="mt-0">
-                    <DiscountTable 
-                      rules={rules.filter(r => r.type === 'PRODUCT')} 
-                      onAddRule={() => setIsFormOpen(true)} 
-                      onEditRule={(r) => {
-                        setEditingRule(r);
-                        setIsFormOpen(true);
-                      }}
-                    />
-                  </TabsContent>
-                  <TabsContent value="order" className="mt-0">
-                    <DiscountTable 
-                      rules={rules.filter(r => r.type === 'ORDER')} 
-                      onAddRule={() => setIsFormOpen(true)} 
-                      onEditRule={(r) => {
-                        setEditingRule(r);
-                        setIsFormOpen(true);
-                      }}
-                    />
-                  </TabsContent>
-                </Tabs>
+                {/* Main Content Area */}
+                <div className="mt-4">
+                  <DiscountTable 
+                    rules={rules} 
+                    onAddRule={() => setIsFormOpen(true)} 
+                    onEditRule={(r) => {
+                      setEditingRule(r);
+                      setIsFormOpen(true);
+                    }}
+                  />
+                </div>
               </div>
             )}
           </div>
