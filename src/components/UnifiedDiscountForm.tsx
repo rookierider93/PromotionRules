@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { 
   Select, 
   SelectContent, 
@@ -125,6 +126,17 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                 </div>
 
                 <div className="space-y-2">
+                  <Label>Is Active</Label>
+                  <div className="flex items-center">
+                    <Switch 
+                      checked={formData.status === 'ACTIVE'}
+                      onCheckedChange={(checked) => updateFormData({ status: checked ? 'ACTIVE' : 'INACTIVE' })}
+                      className="data-checked:bg-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label>Discount Method</Label>
                   <div className="flex gap-2">
                     <Button 
@@ -156,19 +168,18 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                       />
                     </div>
                   ) : (
-                    <div className="flex items-end pb-2">
-                      <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border w-full">
-                        <Checkbox 
-                          id="productLevel" 
+                    <div className="space-y-2">
+                      <Label htmlFor="productLevel">Is Product Level</Label>
+                      <div className="flex items-center">
+                        <Switch 
+                          id="productLevel"
                           checked={formData.isProductLevel}
                           onCheckedChange={(checked) => updateFormData({ 
                             isProductLevel: !!checked,
                             baseType: checked && formData.baseType === 'SHIPPING_DISCOUNT' ? 'EQP' : formData.baseType
                           })}
+                          className="data-checked:bg-emerald-500"
                         />
-                        <Label htmlFor="productLevel" className="text-sm font-medium leading-none cursor-pointer">
-                          Is Product Level Discount
-                        </Label>
                       </div>
                     </div>
                   )}
@@ -694,7 +705,9 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400">Status</span>
-                <Badge className="bg-green-500/20 text-green-400 border-none text-[10px]">ACTIVE</Badge>
+                <Badge className={`${formData.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'} border-none text-[10px]`}>
+                  {formData.status}
+                </Badge>
               </div>
             </div>
 
