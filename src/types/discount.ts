@@ -47,6 +47,9 @@ export interface DiscountRule {
   applyOnItemPrice?: boolean;
   applyOnItemPlusCharges?: boolean;
   
+  isFreeProduct?: boolean;
+  freeProductIds?: string[];
+  
   minOrderAmount?: number;
   promoCode?: string;
   scope: DiscountScope;

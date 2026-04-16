@@ -12,7 +12,9 @@ import {
   Plus,
   Trash2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +82,22 @@ const SHIPPING_METHODS = [
   { label: 'UPS 2nd Day Air AM', value: 'UPS-2nd-Day-Air-AM#3237ad29-1a9f-4f1b-86fc-8d2b3e567c83' },
 ];
 
+const MOCK_CATEGORIES = [
+  { id: 'Select Category', name: 'Select Category' },
+  { id: 'cat-1', name: 'Writing Instruments' },
+  { id: 'cat-2', name: 'Office Supplies' },
+  { id: 'cat-3', name: 'Electronics' },
+];
+
+const MOCK_PRODUCTS = [
+  { id: 'prod-1', name: 'Premium Pen Set', categoryId: 'cat-1' },
+  { id: 'prod-2', name: 'Executive Notebook', categoryId: 'cat-2' },
+  { id: 'prod-3', name: 'Wireless Mouse', categoryId: 'cat-3' },
+  { id: 'prod-4', name: 'Desk Organizer', categoryId: 'cat-2' },
+  { id: 'prod-5', name: 'USB-C Hub', categoryId: 'cat-3' },
+  { id: 'prod-6', name: 'HPR6207 - Crystalline Mirrored Malibu Sunglasses', categoryId: 'cat-2' },
+];
+
 interface UnifiedDiscountFormProps {
   initialData?: Partial<DiscountRule>;
   onSave: (rule: Partial<DiscountRule>) => void;
@@ -88,6 +106,8 @@ interface UnifiedDiscountFormProps {
 
 export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDiscountFormProps) {
   const [isShippingMethodsOpen, setIsShippingMethodsOpen] = React.useState(false);
+  const [productSearch, setProductSearch] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState<string>('Select Category');
   const [formData, setFormData] = React.useState<Partial<DiscountRule>>({
     isAutomatic: false,
     baseType: 'SHIPPING_DISCOUNT',
@@ -102,6 +122,8 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     flatDiscountType: 'AMOUNT',
     tieredFlatDiscounts: [{ minOrderAmount: 0, discountAmount: 0 }],
     applyOnBasketPrice: false,
+    isFreeProduct: false,
+    freeProductIds: [],
     shippingDiscountType: 'FREE',
     shippingMethods: [],
     applyOnFirstTimeBuyer: false,
@@ -129,7 +151,10 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     let mainRule = '';
     
     if (formData.baseType === 'FLAT_DISCOUNT') {
-      if (formData.flatDiscountType === 'PERCENTAGE') {
+      if (formData.isFreeProduct) {
+        const productCount = formData.freeProductIds?.length || 0;
+        mainRule = `Free Products (${productCount})${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      } else if (formData.flatDiscountType === 'PERCENTAGE') {
         mainRule = `${formData.value || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
       } else {
         const tiers = formData.tieredFlatDiscounts || [];
@@ -419,18 +444,138 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   >
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-bold uppercase text-slate-500">Flat Discount Configuration</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox 
-                          id="basketPrice" 
-                          checked={formData.applyOnBasketPrice}
-                          onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
-                        />
-                        <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="freeProduct" 
+                            checked={formData.isFreeProduct}
+                            onCheckedChange={(checked) => updateFormData({ isFreeProduct: !!checked })}
+                          />
+                          <Label htmlFor="freeProduct" className="text-xs font-bold cursor-pointer text-primary">Free Products</Label>
+                        </div>
+                        {!formData.isFreeProduct && (
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="basketPrice" 
+                              checked={formData.applyOnBasketPrice}
+                              onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
+                            />
+                            <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
+                    {formData.isFreeProduct ? (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="space-y-6"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
+                            <Input 
+                              type="number" 
+                              placeholder="0.00" 
+                              className="bg-white"
+                              value={formData.minOrderAmount || ''} 
+                              onChange={e => updateFormData({ minOrderAmount: parseFloat(e.target.value) || 0 })}
+                            />
+                          </div>
+                          <div className="flex items-end pb-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="basketPriceFree" 
+                                checked={formData.applyOnBasketPrice}
+                                onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
+                              />
+                              <Label htmlFor="basketPriceFree" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <Label className="text-xs font-bold text-slate-500">Select Free Product</Label>
+                          
+                          <div className="flex gap-12 items-end">
+                            <div className="w-1/3">
+                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                <SelectTrigger className="bg-transparent border-0 border-b border-slate-200 rounded-none focus:ring-0 px-0 h-10 text-slate-600 shadow-none hover:border-slate-400 transition-colors">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {MOCK_CATEGORIES.map(cat => (
+                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex-1 relative group">
+                              <div className="absolute left-0 bottom-[11px] flex items-center pointer-events-none">
+                                <Search className="h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                              </div>
+                              <Input 
+                                className="bg-transparent border-0 border-b border-slate-200 rounded-none focus-visible:ring-0 pl-14 px-0 h-10 w-full placeholder:text-slate-400 hover:border-slate-400 transition-colors"
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                              />
+                              
+                              {/* Search Results Dropdown (Simplified for Demo) */}
+                              {productSearch && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-48 overflow-auto">
+                                  {MOCK_PRODUCTS
+                                    .filter(p => 
+                                      (selectedCategory === 'Select Category' || p.categoryId === selectedCategory) &&
+                                      p.name.toLowerCase().includes(productSearch.toLowerCase())
+                                    )
+                                    .map(product => (
+                                      <button
+                                        key={product.id}
+                                        className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition-colors"
+                                        onClick={() => {
+                                          const current = formData.freeProductIds || [];
+                                          if (!current.includes(product.id)) {
+                                            updateFormData({ freeProductIds: [...current, product.id] });
+                                          }
+                                          setProductSearch('');
+                                        }}
+                                      >
+                                        {product.name}
+                                      </button>
+                                    ))
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-4 space-y-2">
+                            {formData.freeProductIds?.map(id => {
+                              const product = MOCK_PRODUCTS.find(p => p.id === id);
+                              if (!product) return null;
+                              return (
+                                <div key={id} className="inline-flex items-center gap-2 px-3 py-2 border bg-white rounded-sm text-xs font-medium mr-2 mb-2">
+                                  {product.name}
+                                  <button 
+                                    onClick={() => {
+                                      const current = formData.freeProductIds || [];
+                                      updateFormData({ freeProductIds: current.filter(pid => pid !== id) });
+                                    }}
+                                    className="text-primary hover:text-primary/80"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
                           <div className="flex gap-2">
                             <Button 
                               variant={formData.flatDiscountType === 'AMOUNT' ? 'default' : 'outline'}
@@ -539,10 +684,12 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                             </Button>
                           </div>
                         )}
-                      </motion.div>
+                      </div>
                     )}
-                  </div>
-                </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
 
             <Separator />
 
