@@ -26,6 +26,7 @@ export interface PromotionalRule {
   // Unified Discount Structure
   isAutomatic: boolean;
   baseType: 'EQP' | 'FLAT_DISCOUNT' | 'MOQ' | 'SETUP_CHARGE' | 'SHIPPING_DISCOUNT';
+  selectedLogics: ('EQP' | 'FLAT_DISCOUNT' | 'MOQ' | 'SETUP_CHARGE' | 'SHIPPING_DISCOUNT')[];
   eqpModifier: string; // 'NONE', '3%', '5%', or custom like '10%'
   moqOption: string; // 'NONE', 'HALF', 'FULL', or custom like '25%'
   setupOption: string; // 'NONE', 'HALF', 'FULL', or custom like '25%'
@@ -33,6 +34,7 @@ export interface PromotionalRule {
   // Flat Discount Specifics
   flatDiscountType?: 'PERCENTAGE' | 'AMOUNT';
   flatDiscountValue?: number; // Unique field for flat discount value
+  flatDiscountMinOrderAmount?: number;
   maxDiscountAmount?: number;
   flatDiscountApplyOnBasket?: boolean; // Unique field
   tieredFlatDiscounts?: TieredFlatDiscount[];

@@ -108,9 +108,11 @@ export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: Un
   const [productSearch, setProductSearch] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('Select Category');
   const [isShippingMethodsOpen, setIsShippingMethodsOpen] = React.useState(false);
+  const [isAddLogicOpen, setIsAddLogicOpen] = React.useState(false);
   const [formData, setFormData] = React.useState<Partial<PromotionalRule>>({
     isAutomatic: false,
     baseType: 'FLAT_DISCOUNT',
+    selectedLogics: [],
     eqpModifier: 'NONE',
     moqOption: 'NONE',
     setupOption: 'NONE',
@@ -119,6 +121,7 @@ export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: Un
     startDate: new Date().toISOString().slice(0, 16),
     endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 16),
     flatDiscountValue: 0,
+    flatDiscountMinOrderAmount: 0,
     flatDiscountType: 'AMOUNT',
     tieredFlatDiscounts: [{ minOrderAmount: 0, discountAmount: 0 }],
     flatDiscountApplyOnBasket: false,
@@ -139,6 +142,13 @@ export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: Un
     ...initialData
   });
 
+  // Ensure selectedLogics is initialized if loading existing data
+  React.useEffect(() => {
+    if (initialData && !initialData.selectedLogics && initialData.baseType) {
+      setFormData(prev => ({ ...prev, selectedLogics: [initialData.baseType] }));
+    }
+  }, [initialData]);
+
   const updateFormData = (data: Partial<PromotionalRule>) => {
     setFormData(prev => {
       const next = { ...prev, ...data };
@@ -147,43 +157,75 @@ export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: Un
   };
 
   const generateRuleString = () => {
-    let mainRule = '';
+    if (!formData.selectedLogics || formData.selectedLogics.length === 0) return 'No logic selected';
     
-    if (formData.baseType === 'FLAT_DISCOUNT') {
-      if (formData.isFreeProduct) {
-        const productCount = formData.freeProductIds?.length || 0;
-        mainRule = `Free Products (${productCount})${formData.freeProductMinOrderAmount ? ` (Min $${formData.freeProductMinOrderAmount})` : ''}`;
-      } else if (formData.flatDiscountType === 'PERCENTAGE') {
-        mainRule = `${formData.flatDiscountValue || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
-      } else {
-        const tiers = formData.tieredFlatDiscounts || [];
-        if (tiers.length === 1) {
-          mainRule = `$${tiers[0].discountAmount} Flat Discount${tiers[0].minOrderAmount ? ` (Min $${tiers[0].minOrderAmount})` : ''}`;
+    const rules = formData.selectedLogics.map(logic => {
+      if (logic === 'EQP') {
+        let parts = ['EQP'];
+        if (formData.eqpModifier !== 'NONE') parts[0] += ` - ${formData.eqpModifier}`;
+        return parts.join('');
+      } else if (logic === 'FLAT_DISCOUNT') {
+        if (formData.isFreeProduct) {
+          const productCount = formData.freeProductIds?.length || 0;
+          return `Free Products (${productCount})${formData.freeProductMinOrderAmount ? ` (Min $${formData.freeProductMinOrderAmount})` : ''}`;
+        } else if (formData.flatDiscountType === 'PERCENTAGE') {
+          return `${formData.flatDiscountValue || 0}% Flat Discount${formData.flatDiscountMinOrderAmount ? ` (Min $${formData.flatDiscountMinOrderAmount})` : ''}${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
         } else {
-          mainRule = `${tiers.length} Tiered Flat Discount`;
+          const tiers = formData.tieredFlatDiscounts || [];
+          if (tiers.length === 1) {
+            return `$${tiers[0].discountAmount} Flat Discount${tiers[0].minOrderAmount ? ` (Min $${tiers[0].minOrderAmount})` : ''}`;
+          } else {
+            return `${tiers.length} Tiered Flat Discount`;
+          }
         }
+      } else if (logic === 'MOQ') {
+        return formData.moqOption === 'NONE' ? 'Standard MOQ' : 
+               formData.moqOption === 'HALF' ? '1/2 MOQ' : 
+               formData.moqOption === 'FULL' ? 'Full MOQ' : `${formData.moqOption} MOQ`;
+      } else if (logic === 'SETUP_CHARGE') {
+        return formData.setupOption === 'NONE' ? 'Standard Setup' : 
+               formData.setupOption === 'HALF' ? '1/2 Setup' : 
+               formData.setupOption === 'FULL' ? 'Full Setup' : `${formData.setupOption} Setup`;
+      } else if (logic === 'SHIPPING_DISCOUNT') {
+        const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
+                     formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.shippingDiscountValue}% Off Shipping` :
+                     `$${formData.shippingDiscountValue} Off Shipping`;
+        const methodCount = formData.shippingMethods?.length || 0;
+        const methodText = methodCount === 0 ? 'All Methods' : 
+                          methodCount === SHIPPING_METHODS.length ? 'All Methods' :
+                          `${methodCount} Methods`;
+        return `${type} (${methodText})`;
       }
-    } else if (formData.baseType === 'EQP') {
-      let parts = ['EQP'];
-      if (formData.eqpModifier !== 'NONE') parts[0] += ` - ${formData.eqpModifier}`;
-      
-      let addons = [];
-      if (formData.moqOption !== 'NONE') addons.push(`${formData.moqOption === 'HALF' ? 'Half' : 'Full'} MOQ`);
-      if (formData.setupOption !== 'NONE') addons.push(`${formData.setupOption === 'HALF' ? 'Half' : 'Full'} Setup Charge`);
-      
-      mainRule = parts.concat(addons).join(', ');
-    } else if (formData.baseType === 'SHIPPING_DISCOUNT') {
-      const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
-                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.shippingDiscountValue}% Off Shipping` :
-                   `$${formData.shippingDiscountValue} Off Shipping`;
-      const methodCount = formData.shippingMethods?.length || 0;
-      const methodText = methodCount === 0 ? 'All Methods' : 
-                        methodCount === SHIPPING_METHODS.length ? 'All Methods' :
-                        `${methodCount} Methods`;
-      mainRule = `${type} (${methodText})`;
-    }
+      return '';
+    });
 
-    return mainRule;
+    return rules.filter(Boolean).join(' + ');
+  };
+
+  const LOGIC_OPTIONS = [
+    { id: 'EQP', label: 'EQP' },
+    { id: 'FLAT_DISCOUNT', label: 'Flat Discount On Product' },
+    { id: 'SHIPPING_DISCOUNT', label: 'Shipping Discount' },
+    { id: 'MOQ', label: 'MOQ' },
+    { id: 'SETUP_CHARGE', label: 'Setup Charge' },
+  ] as const;
+
+  const availableLogics = LOGIC_OPTIONS.filter(opt => {
+    if (formData.selectedLogics?.includes(opt.id)) return false;
+    if (opt.id === 'EQP' && formData.selectedLogics?.includes('FLAT_DISCOUNT')) return false;
+    if (opt.id === 'FLAT_DISCOUNT' && formData.selectedLogics?.includes('EQP')) return false;
+    return true;
+  });
+
+  const addLogic = (logicId: typeof LOGIC_OPTIONS[number]['id']) => {
+    const current = formData.selectedLogics || [];
+    updateFormData({ selectedLogics: [...current, logicId] });
+    setIsAddLogicOpen(false);
+  };
+
+  const removeLogic = (logicId: string) => {
+    const current = formData.selectedLogics || [];
+    updateFormData({ selectedLogics: current.filter(l => l !== logicId) });
   };
 
   return (
@@ -258,133 +300,400 @@ export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: Un
 
             {/* Section 2: Discount Logic */}
             <div className="space-y-8">
-              <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
-                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">2</span>
-                Discount Logic
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
+                  <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">2</span>
+                  Discount Logic
+                </div>
+                {availableLogics.length > 0 && (
+                  <div className="relative">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-primary text-primary hover:bg-primary/5"
+                      onClick={() => setIsAddLogicOpen(!isAddLogicOpen)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Logic
+                    </Button>
+                    
+                    {isAddLogicOpen && (
+                      <>
+                        <div className="fixed inset-0 z-30" onClick={() => setIsAddLogicOpen(false)} />
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white border rounded-lg shadow-xl z-40 py-1 overflow-hidden">
+                          <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b">Available Logic</div>
+                          {availableLogics.map(opt => (
+                            <button
+                              key={opt.id}
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors flex items-center justify-between group"
+                              onClick={() => addLogic(opt.id)}
+                            >
+                              {opt.label}
+                              <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-muted-foreground">Base Discount</Label>
-                  <div className="flex flex-wrap gap-4">
-                    <Button 
-                      variant={formData.baseType === 'EQP' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
-                      onClick={() => updateFormData({ baseType: 'EQP' })}
-                    >
-                      EQP
-                    </Button>
-                    <Button 
-                      variant={formData.baseType === 'FLAT_DISCOUNT' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
-                      onClick={() => updateFormData({ baseType: 'FLAT_DISCOUNT' })}
-                    >
-                      Flat Discount On Product
-                    </Button>
-                    <Button 
-                      variant={formData.baseType === 'SHIPPING_DISCOUNT' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
-                      onClick={() => updateFormData({ baseType: 'SHIPPING_DISCOUNT', shippingDiscountType: 'FREE', shippingDiscountValue: 0, shippingMethods: [] })}
-                    >
-                      Shipping Discount
-                    </Button>
-                    <Button 
-                      variant={formData.baseType === 'MOQ' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
-                      onClick={() => updateFormData({ baseType: 'MOQ' })}
-                    >
-                      MOQ
-                    </Button>
-                    <Button 
-                      variant={formData.baseType === 'SETUP_CHARGE' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
-                      onClick={() => updateFormData({ baseType: 'SETUP_CHARGE' })}
-                    >
-                      Setup Charge
-                    </Button>
+                {(!formData.selectedLogics || formData.selectedLogics.length === 0) && (
+                  <div className="text-center py-12 border-2 border-dashed rounded-xl bg-slate-50/50">
+                    <p className="text-slate-400 text-sm">No discount logic added yet. Click "Add Logic" to begin.</p>
                   </div>
-                </div>
-
-                {formData.baseType === 'EQP' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-4 p-6 bg-slate-50 rounded-xl border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold uppercase text-slate-500">EQP Modifier</Label>
-                      {(!['NONE', '3%', '5%'].includes(formData.eqpModifier || 'NONE')) && (
-                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {['NONE', '3%', '5%'].map((m) => (
-                        <Button
-                          key={m}
-                          variant={formData.eqpModifier === m ? 'secondary' : 'ghost'}
-                          className={`flex-1 border min-w-[100px] ${formData.eqpModifier === m ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
-                          onClick={() => updateFormData({ eqpModifier: m })}
-                        >
-                          {m === 'NONE' ? 'Standard' : `-${m}`}
-                        </Button>
-                      ))}
-                      <div className="flex-1 min-w-[150px] relative">
-                        <Input 
-                          placeholder="Custom %"
-                          className={`pl-8 ${!['NONE', '3%', '5%'].includes(formData.eqpModifier || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                          value={!['NONE', '3%', '5%'].includes(formData.eqpModifier || 'NONE') ? formData.eqpModifier?.replace('%', '') : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') {
-                              updateFormData({ eqpModifier: 'NONE' });
-                            } else {
-                              updateFormData({ eqpModifier: val.endsWith('%') ? val : `${val}%` });
-                            }
-                          }}
-                        />
-                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
-                        <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
-                      </div>
-                    </div>
-                  </motion.div>
                 )}
 
-                {formData.baseType === 'FLAT_DISCOUNT' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6 p-6 bg-slate-50 rounded-xl border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold uppercase text-slate-500">Flat Discount Configuration</Label>
-                      <div className="flex items-center gap-6">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="freeProduct" 
-                            checked={formData.isFreeProduct}
-                            onCheckedChange={(checked) => updateFormData({ isFreeProduct: !!checked })}
-                          />
-                          <Label htmlFor="freeProduct" className="text-xs font-bold cursor-pointer text-primary">Free Products</Label>
-                        </div>
-                        {!formData.isFreeProduct && (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="basketPrice" 
-                              checked={formData.flatDiscountApplyOnBasket}
-                              onCheckedChange={(checked) => updateFormData({ flatDiscountApplyOnBasket: !!checked })}
-                            />
-                            <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
-                          </div>
-                        )}
-                      </div>
+                {formData.selectedLogics?.map((logicType) => (
+                  <div key={logicType} className="relative group">
+                    <div className="absolute -right-2 -top-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="destructive" 
+                        size="icon" 
+                        className="h-7 w-7 rounded-full shadow-lg"
+                        onClick={() => removeLogic(logicType)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
 
-                    {formData.isFreeProduct ? (
+                    {logicType === 'EQP' && (
                       <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="space-y-6"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-4 p-6 bg-slate-50 rounded-xl border"
                       >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-5 w-1 bg-primary rounded-full" />
+                          <span className="text-sm font-bold text-slate-800">EQP</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold uppercase text-slate-500">EQP Modifier</Label>
+                          {(!['NONE', '3%', '5%'].includes(formData.eqpModifier || 'NONE')) && (
+                            <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {['NONE', '3%', '5%'].map((m) => (
+                            <Button
+                              key={m}
+                              variant={formData.eqpModifier === m ? 'secondary' : 'ghost'}
+                              className={`flex-1 border min-w-[100px] ${formData.eqpModifier === m ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
+                              onClick={() => updateFormData({ eqpModifier: m })}
+                            >
+                              {m === 'NONE' ? 'Standard' : `-${m}`}
+                            </Button>
+                          ))}
+                          <div className="flex-1 min-w-[150px] relative">
+                            <Input 
+                              placeholder="Custom %"
+                              className={`pl-8 ${!['NONE', '3%', '5%'].includes(formData.eqpModifier || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                              value={!['NONE', '3%', '5%'].includes(formData.eqpModifier || 'NONE') ? formData.eqpModifier?.replace('%', '') : ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  updateFormData({ eqpModifier: 'NONE' });
+                                } else {
+                                  updateFormData({ eqpModifier: val.endsWith('%') ? val : `${val}%` });
+                                }
+                              }}
+                            />
+                            <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
+                            <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {logicType === 'FLAT_DISCOUNT' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-6 p-6 bg-slate-50 rounded-xl border"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-5 w-1 bg-primary rounded-full" />
+                          <span className="text-sm font-bold text-slate-800">Flat Discount On Product</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold uppercase text-slate-500">Flat Discount Configuration</Label>
+                          <div className="flex items-center gap-6">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="freeProduct" 
+                                checked={formData.isFreeProduct}
+                                onCheckedChange={(checked) => updateFormData({ isFreeProduct: !!checked })}
+                              />
+                              <Label htmlFor="freeProduct" className="text-xs font-bold cursor-pointer text-primary">Free Products</Label>
+                            </div>
+                            {!formData.isFreeProduct && (
+                              <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id="basketPrice" 
+                                  checked={formData.flatDiscountApplyOnBasket}
+                                  onCheckedChange={(checked) => updateFormData({ flatDiscountApplyOnBasket: !!checked })}
+                                />
+                                <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {formData.isFreeProduct ? (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="space-y-6"
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
+                                <Input 
+                                  type="number" 
+                                  placeholder="0.00" 
+                                  className="bg-white"
+                                  value={formData.freeProductMinOrderAmount || ''} 
+                                  onChange={e => updateFormData({ freeProductMinOrderAmount: parseFloat(e.target.value) || 0 })}
+                                />
+                              </div>
+                              <div className="flex items-end pb-2">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id="basketPriceFree" 
+                                    checked={formData.freeProductApplyOnBasket}
+                                    onCheckedChange={(checked) => updateFormData({ freeProductApplyOnBasket: !!checked })}
+                                  />
+                                  <Label htmlFor="basketPriceFree" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <Label className="text-xs font-bold text-slate-500">Select Free Product</Label>
+                              
+                              <div className="flex gap-12 items-end">
+                                <div className="w-1/3">
+                                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                                    <SelectTrigger className="bg-transparent border-0 border-b border-slate-200 rounded-none focus:ring-0 px-0 h-10 text-slate-600 shadow-none hover:border-slate-400 transition-colors">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {MOCK_CATEGORIES.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="flex-1 relative group">
+                                  <div className="absolute left-0 bottom-[11px] flex items-center pointer-events-none">
+                                    <Search className="h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                  </div>
+                                  <Input 
+                                    className="bg-transparent border-0 border-b border-slate-200 rounded-none focus-visible:ring-0 pl-14 px-0 h-10 w-full placeholder:text-slate-400 hover:border-slate-400 transition-colors"
+                                    value={productSearch}
+                                    onChange={(e) => setProductSearch(e.target.value)}
+                                  />
+                                  
+                                  {/* Search Results Dropdown (Simplified for Demo) */}
+                                  {productSearch && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-48 overflow-auto">
+                                      {MOCK_PRODUCTS
+                                        .filter(p => 
+                                          (selectedCategory === 'Select Category' || p.categoryId === selectedCategory) &&
+                                          p.name.toLowerCase().includes(productSearch.toLowerCase())
+                                        )
+                                        .map(product => (
+                                          <button
+                                            key={product.id}
+                                            className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition-colors"
+                                            onClick={() => {
+                                              const current = formData.freeProductIds || [];
+                                              if (!current.includes(product.id)) {
+                                                updateFormData({ freeProductIds: [...current, product.id] });
+                                              }
+                                              setProductSearch('');
+                                            }}
+                                          >
+                                            {product.name}
+                                          </button>
+                                        ))
+                                      }
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="pt-4 space-y-2">
+                                {formData.freeProductIds?.map(id => {
+                                  const product = MOCK_PRODUCTS.find(p => p.id === id);
+                                  if (!product) return null;
+                                  return (
+                                    <div key={id} className="inline-flex items-center gap-2 px-3 py-2 border bg-white rounded-sm text-xs font-medium mr-2 mb-2">
+                                      {product.name}
+                                      <button 
+                                        onClick={() => {
+                                          const current = formData.freeProductIds || [];
+                                          updateFormData({ freeProductIds: current.filter(pid => pid !== id) });
+                                        }}
+                                        className="text-primary hover:text-primary/80"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="space-y-2">
+                              <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant={formData.flatDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => updateFormData({ flatDiscountType: 'AMOUNT' })}
+                                >
+                                  Amount ($)
+                                </Button>
+                                <Button 
+                                  variant={formData.flatDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => updateFormData({ flatDiscountType: 'PERCENTAGE' })}
+                                >
+                                  Percentage (%)
+                                </Button>
+                              </div>
+                            </div>
+
+                            {formData.flatDiscountType === 'PERCENTAGE' ? (
+                              <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-slate-500">Min Order Amount ($)</Label>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="bg-white"
+                                      value={formData.flatDiscountMinOrderAmount || ''} 
+                                      onChange={e => updateFormData({ flatDiscountMinOrderAmount: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-slate-500">Percentage (%)</Label>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0" 
+                                      className="bg-white"
+                                      value={formData.flatDiscountValue || ''} 
+                                      onChange={e => updateFormData({ flatDiscountValue: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-xs font-bold text-slate-500">Max Discount Amount ($)</Label>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      className="bg-white"
+                                      value={formData.maxDiscountAmount || ''} 
+                                      onChange={e => updateFormData({ maxDiscountAmount: parseFloat(e.target.value) || 0 })}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {formData.tieredFlatDiscounts?.map((tier, index) => (
+                                  <div key={index} className="flex items-end gap-3">
+                                    <div className="flex-1 space-y-2">
+                                      <Label className="text-[10px] font-bold text-slate-400 uppercase">Min Order Amount ($)</Label>
+                                      <Input 
+                                        type="number" 
+                                        placeholder="0.00" 
+                                        className="bg-white"
+                                        value={tier.minOrderAmount} 
+                                        onChange={e => {
+                                          const newTiers = [...(formData.tieredFlatDiscounts || [])];
+                                          newTiers[index] = { ...newTiers[index], minOrderAmount: parseFloat(e.target.value) || 0 };
+                                          updateFormData({ tieredFlatDiscounts: newTiers });
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                      <Label className="text-[10px] font-bold text-slate-400 uppercase">Discount Amount ($)</Label>
+                                      <Input 
+                                        type="number" 
+                                        placeholder="0.00" 
+                                        className="bg-white"
+                                        value={tier.discountAmount} 
+                                        onChange={e => {
+                                          const newTiers = [...(formData.tieredFlatDiscounts || [])];
+                                          newTiers[index] = { ...newTiers[index], discountAmount: parseFloat(e.target.value) || 0 };
+                                          updateFormData({ tieredFlatDiscounts: newTiers });
+                                        }}
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                        onClick={() => {
+                                          const newTiers = formData.tieredFlatDiscounts?.filter((_, i) => i !== index);
+                                          updateFormData({ tieredFlatDiscounts: newTiers });
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full border-dashed border-2 hover:bg-slate-100"
+                                  onClick={() => {
+                                    updateFormData({ 
+                                      tieredFlatDiscounts: [
+                                        ...(formData.tieredFlatDiscounts || []), 
+                                        { minOrderAmount: 0, discountAmount: 0 }
+                                      ] 
+                                    });
+                                  }}
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Tier
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {logicType === 'SHIPPING_DISCOUNT' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-6 p-6 bg-slate-50 rounded-xl border"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-5 w-1 bg-primary rounded-full" />
+                          <span className="text-sm font-bold text-slate-800">Shipping Discount</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold uppercase text-slate-500">Shipping Discount Configuration</Label>
+                          <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                            {formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
+                             formData.shippingDiscountType === 'PERCENTAGE' ? 'Percentage' : 'Flat Amount'}
+                          </Badge>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
@@ -392,448 +701,225 @@ export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: Un
                               type="number" 
                               placeholder="0.00" 
                               className="bg-white"
-                              value={formData.freeProductMinOrderAmount || ''} 
-                              onChange={e => updateFormData({ freeProductMinOrderAmount: parseFloat(e.target.value) || 0 })}
+                              value={formData.shippingMinOrderAmount || ''} 
+                              onChange={e => updateFormData({ shippingMinOrderAmount: parseFloat(e.target.value) || 0 })}
                             />
                           </div>
-                          <div className="flex items-end pb-2">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox 
-                                id="basketPriceFree" 
-                                checked={formData.freeProductApplyOnBasket}
-                                onCheckedChange={(checked) => updateFormData({ freeProductApplyOnBasket: !!checked })}
-                              />
-                              <Label htmlFor="basketPriceFree" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
-                            </div>
-                          </div>
-                        </div>
+                          <div className="space-y-2 relative">
+                            <Label className="text-xs font-bold text-slate-500">Shipping Methods</Label>
+                            <div className="relative">
+                              <Button 
+                                variant="outline" 
+                                className="w-full justify-between bg-white font-normal"
+                                onClick={() => setIsShippingMethodsOpen(!isShippingMethodsOpen)}
+                              >
+                                <span className="truncate">
+                                  {formData.shippingMethods?.length === 0 || formData.shippingMethods?.length === SHIPPING_METHODS.length
+                                    ? "All Shipping Methods"
+                                    : `${formData.shippingMethods?.length} methods selected`}
+                                </span>
+                                <ChevronDown className={`w-4 h-4 opacity-50 transition-transform ${isShippingMethodsOpen ? 'rotate-180' : ''}`} />
+                              </Button>
 
-                        <div className="space-y-4">
-                          <Label className="text-xs font-bold text-slate-500">Select Free Product</Label>
-                          
-                          <div className="flex gap-12 items-end">
-                            <div className="w-1/3">
-                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger className="bg-transparent border-0 border-b border-slate-200 rounded-none focus:ring-0 px-0 h-10 text-slate-600 shadow-none hover:border-slate-400 transition-colors">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {MOCK_CATEGORIES.map(cat => (
-                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex-1 relative group">
-                              <div className="absolute left-0 bottom-[11px] flex items-center pointer-events-none">
-                                <Search className="h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                              </div>
-                              <Input 
-                                className="bg-transparent border-0 border-b border-slate-200 rounded-none focus-visible:ring-0 pl-14 px-0 h-10 w-full placeholder:text-slate-400 hover:border-slate-400 transition-colors"
-                                value={productSearch}
-                                onChange={(e) => setProductSearch(e.target.value)}
-                              />
-                              
-                              {/* Search Results Dropdown (Simplified for Demo) */}
-                              {productSearch && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-48 overflow-auto">
-                                  {MOCK_PRODUCTS
-                                    .filter(p => 
-                                      (selectedCategory === 'Select Category' || p.categoryId === selectedCategory) &&
-                                      p.name.toLowerCase().includes(productSearch.toLowerCase())
-                                    )
-                                    .map(product => (
-                                      <button
-                                        key={product.id}
-                                        className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition-colors"
-                                        onClick={() => {
-                                          const current = formData.freeProductIds || [];
-                                          if (!current.includes(product.id)) {
-                                            updateFormData({ freeProductIds: [...current, product.id] });
-                                          }
-                                          setProductSearch('');
-                                        }}
-                                      >
-                                        {product.name}
-                                      </button>
-                                    ))
-                                  }
-                                </div>
+                              {isShippingMethodsOpen && (
+                                <>
+                                  <div 
+                                    className="fixed inset-0 z-30" 
+                                    onClick={() => setIsShippingMethodsOpen(false)}
+                                  />
+                                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg z-40 p-2">
+                                    <ScrollArea className="h-64">
+                                      <div className="space-y-2 p-1">
+                                        <div className="flex items-center space-x-2 pb-2 border-b mb-2">
+                                          <Checkbox 
+                                            id="selectAll" 
+                                            checked={formData.shippingMethods?.length === SHIPPING_METHODS.length}
+                                            onCheckedChange={(checked) => {
+                                              if (checked) {
+                                                updateFormData({ shippingMethods: SHIPPING_METHODS.map(m => m.value) });
+                                              } else {
+                                                updateFormData({ shippingMethods: [] });
+                                              }
+                                            }}
+                                          />
+                                          <Label htmlFor="selectAll" className="font-bold cursor-pointer">Select All</Label>
+                                        </div>
+                                        {SHIPPING_METHODS.map((method) => (
+                                          <div key={method.value} className="flex items-center space-x-2 hover:bg-slate-50 p-1 rounded">
+                                            <Checkbox 
+                                              id={method.value} 
+                                              checked={formData.shippingMethods?.includes(method.value)}
+                                              onCheckedChange={(checked) => {
+                                                const current = formData.shippingMethods || [];
+                                                if (checked) {
+                                                  updateFormData({ shippingMethods: [...current, method.value] });
+                                                } else {
+                                                  updateFormData({ shippingMethods: current.filter(v => v !== method.value) });
+                                                }
+                                              }}
+                                            />
+                                            <Label htmlFor={method.value} className="text-sm cursor-pointer flex-1">{method.label}</Label>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </ScrollArea>
+                                  </div>
+                                </>
                               )}
                             </div>
                           </div>
-
-                          <div className="pt-4 space-y-2">
-                            {formData.freeProductIds?.map(id => {
-                              const product = MOCK_PRODUCTS.find(p => p.id === id);
-                              if (!product) return null;
-                              return (
-                                <div key={id} className="inline-flex items-center gap-2 px-3 py-2 border bg-white rounded-sm text-xs font-medium mr-2 mb-2">
-                                  {product.name}
-                                  <button 
-                                    onClick={() => {
-                                      const current = formData.freeProductIds || [];
-                                      updateFormData({ freeProductIds: current.filter(pid => pid !== id) });
-                                    }}
-                                    className="text-primary hover:text-primary/80"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
                         </div>
-                      </motion.div>
-                    ) : (
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
+
+                        <div className="space-y-3">
+                          <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
                           <div className="flex gap-2">
                             <Button 
-                              variant={formData.flatDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                              variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
                               size="sm"
                               className="flex-1"
-                              onClick={() => updateFormData({ flatDiscountType: 'AMOUNT' })}
+                              onClick={() => updateFormData({ shippingDiscountType: 'FREE', shippingDiscountValue: 0 })}
+                            >
+                              Free Shipping
+                            </Button>
+                            <Button 
+                              variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
                             >
                               Amount ($)
                             </Button>
                             <Button 
-                              variant={formData.flatDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
+                              variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
                               size="sm"
                               className="flex-1"
-                              onClick={() => updateFormData({ flatDiscountType: 'PERCENTAGE' })}
+                              onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
                             >
                               Percentage (%)
                             </Button>
                           </div>
                         </div>
 
-                        {formData.flatDiscountType === 'PERCENTAGE' ? (
-                          <div className="grid grid-cols-2 gap-4">
+                        {formData.shippingDiscountType !== 'FREE' && (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="pt-2"
+                          >
                             <div className="space-y-2">
-                              <Label className="text-xs font-bold text-slate-500">Percentage (%)</Label>
-                              <Input 
-                                type="number" 
-                                placeholder="0" 
-                                className="bg-white"
-                                value={formData.flatDiscountValue || ''} 
-                                onChange={e => updateFormData({ flatDiscountValue: parseFloat(e.target.value) || 0 })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-xs font-bold text-slate-500">Max Discount Amount ($)</Label>
+                              <Label className="text-xs font-bold text-slate-500">
+                                {formData.shippingDiscountType === 'PERCENTAGE' ? 'Percentage (%)' : 'Discount Amount ($)'}
+                              </Label>
                               <Input 
                                 type="number" 
                                 placeholder="0.00" 
                                 className="bg-white"
-                                value={formData.maxDiscountAmount || ''} 
-                                onChange={e => updateFormData({ maxDiscountAmount: parseFloat(e.target.value) || 0 })}
+                                value={formData.shippingDiscountValue || ''} 
+                                onChange={e => updateFormData({ shippingDiscountValue: parseFloat(e.target.value) || 0 })}
                               />
                             </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {formData.tieredFlatDiscounts?.map((tier, index) => (
-                              <div key={index} className="flex items-end gap-3">
-                                <div className="flex-1 space-y-2">
-                                  <Label className="text-[10px] font-bold text-slate-400 uppercase">Min Order Amount ($)</Label>
-                                  <Input 
-                                    type="number" 
-                                    placeholder="0.00" 
-                                    className="bg-white"
-                                    value={tier.minOrderAmount} 
-                                    onChange={e => {
-                                      const newTiers = [...(formData.tieredFlatDiscounts || [])];
-                                      newTiers[index] = { ...newTiers[index], minOrderAmount: parseFloat(e.target.value) || 0 };
-                                      updateFormData({ tieredFlatDiscounts: newTiers });
-                                    }}
-                                  />
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                  <Label className="text-[10px] font-bold text-slate-400 uppercase">Discount Amount ($)</Label>
-                                  <Input 
-                                    type="number" 
-                                    placeholder="0.00" 
-                                    className="bg-white"
-                                    value={tier.discountAmount} 
-                                    onChange={e => {
-                                      const newTiers = [...(formData.tieredFlatDiscounts || [])];
-                                      newTiers[index] = { ...newTiers[index], discountAmount: parseFloat(e.target.value) || 0 };
-                                      updateFormData({ tieredFlatDiscounts: newTiers });
-                                    }}
-                                  />
-                                </div>
-                                {index > 0 && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                    onClick={() => {
-                                      const newTiers = formData.tieredFlatDiscounts?.filter((_, i) => i !== index);
-                                      updateFormData({ tieredFlatDiscounts: newTiers });
-                                    }}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full border-dashed border-2 hover:bg-slate-100"
-                              onClick={() => {
-                                updateFormData({ 
-                                  tieredFlatDiscounts: [
-                                    ...(formData.tieredFlatDiscounts || []), 
-                                    { minOrderAmount: 0, discountAmount: 0 }
-                                  ] 
-                                });
-                              }}
-                            >
-                              <Plus className="w-4 h-4 mr-2" />
-                              Add Tier
-                            </Button>
-                          </div>
+                          </motion.div>
                         )}
-                      </div>
+                      </motion.div>
                     )}
-                  </motion.div>
-                )}
 
-                {formData.baseType === 'SHIPPING_DISCOUNT' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6 p-6 bg-slate-50 rounded-xl border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold uppercase text-slate-500">Shipping Discount Configuration</Label>
-                      <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
-                        {formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
-                         formData.shippingDiscountType === 'PERCENTAGE' ? 'Percentage' : 'Flat Amount'}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          className="bg-white"
-                          value={formData.shippingMinOrderAmount || ''} 
-                          onChange={e => updateFormData({ shippingMinOrderAmount: parseFloat(e.target.value) || 0 })}
-                        />
-                      </div>
-                      <div className="space-y-2 relative">
-                        <Label className="text-xs font-bold text-slate-500">Shipping Methods</Label>
-                        <div className="relative">
-                          <Button 
-                            variant="outline" 
-                            className="w-full justify-between bg-white font-normal"
-                            onClick={() => setIsShippingMethodsOpen(!isShippingMethodsOpen)}
-                          >
-                            <span className="truncate">
-                              {formData.shippingMethods?.length === 0 || formData.shippingMethods?.length === SHIPPING_METHODS.length
-                                ? "All Shipping Methods"
-                                : `${formData.shippingMethods?.length} methods selected`}
-                            </span>
-                            <ChevronDown className={`w-4 h-4 opacity-50 transition-transform ${isShippingMethodsOpen ? 'rotate-180' : ''}`} />
-                          </Button>
-
-                          {isShippingMethodsOpen && (
-                            <>
-                              <div 
-                                className="fixed inset-0 z-30" 
-                                onClick={() => setIsShippingMethodsOpen(false)}
-                              />
-                              <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg z-40 p-2">
-                                <ScrollArea className="h-64">
-                                  <div className="space-y-2 p-1">
-                                    <div className="flex items-center space-x-2 pb-2 border-b mb-2">
-                                      <Checkbox 
-                                        id="selectAll" 
-                                        checked={formData.shippingMethods?.length === SHIPPING_METHODS.length}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            updateFormData({ shippingMethods: SHIPPING_METHODS.map(m => m.value) });
-                                          } else {
-                                            updateFormData({ shippingMethods: [] });
-                                          }
-                                        }}
-                                      />
-                                      <Label htmlFor="selectAll" className="font-bold cursor-pointer">Select All</Label>
-                                    </div>
-                                    {SHIPPING_METHODS.map((method) => (
-                                      <div key={method.value} className="flex items-center space-x-2 hover:bg-slate-50 p-1 rounded">
-                                        <Checkbox 
-                                          id={method.value} 
-                                          checked={formData.shippingMethods?.includes(method.value)}
-                                          onCheckedChange={(checked) => {
-                                            const current = formData.shippingMethods || [];
-                                            if (checked) {
-                                              updateFormData({ shippingMethods: [...current, method.value] });
-                                            } else {
-                                              updateFormData({ shippingMethods: current.filter(v => v !== method.value) });
-                                            }
-                                          }}
-                                        />
-                                        <Label htmlFor={method.value} className="text-sm cursor-pointer flex-1">{method.label}</Label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </ScrollArea>
-                              </div>
-                            </>
+                    {logicType === 'MOQ' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-4 p-6 bg-slate-50 rounded-xl border"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-5 w-1 bg-primary rounded-full" />
+                          <span className="text-sm font-bold text-slate-800">MOQ</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold uppercase text-slate-500">MOQ Configuration</Label>
+                          {(!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE')) && (
+                            <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
                           )}
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateFormData({ shippingDiscountType: 'FREE', shippingDiscountValue: 0 })}
-                        >
-                          Free Shipping
-                        </Button>
-                        <Button 
-                          variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
-                        >
-                          Amount ($)
-                        </Button>
-                        <Button 
-                          variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
-                        >
-                          Percentage (%)
-                        </Button>
-                      </div>
-                    </div>
-
-                    {formData.shippingDiscountType !== 'FREE' && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="pt-2"
-                      >
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-500">
-                            {formData.shippingDiscountType === 'PERCENTAGE' ? 'Percentage (%)' : 'Discount Amount ($)'}
-                          </Label>
-                          <Input 
-                            type="number" 
-                            placeholder="0.00" 
-                            className="bg-white"
-                            value={formData.shippingDiscountValue || ''} 
-                            onChange={e => updateFormData({ shippingDiscountValue: parseFloat(e.target.value) || 0 })}
-                          />
+                        <div className="flex flex-wrap gap-2">
+                          {['NONE', 'HALF', 'FULL'].map((m) => (
+                            <Button
+                              key={m}
+                              variant={formData.moqOption === m ? 'secondary' : 'ghost'}
+                              className={`flex-1 border min-w-[100px] ${formData.moqOption === m ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
+                              onClick={() => updateFormData({ moqOption: m })}
+                            >
+                              {m === 'NONE' ? 'Standard' : m === 'HALF' ? '1/2 MOQ' : 'Full MOQ'}
+                            </Button>
+                          ))}
+                          <div className="flex-1 min-w-[150px] relative">
+                            <Input 
+                              placeholder="Custom %"
+                              className={`pl-8 ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                              value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  updateFormData({ moqOption: 'NONE' });
+                                } else {
+                                  updateFormData({ moqOption: val.endsWith('%') ? val : `${val}%` });
+                                }
+                              }}
+                            />
+                            <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
+                            <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
+                          </div>
                         </div>
                       </motion.div>
                     )}
-                  </motion.div>
-                )}
 
-                {formData.baseType === 'MOQ' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-4 p-6 bg-slate-50 rounded-xl border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold uppercase text-slate-500">MOQ Configuration</Label>
-                      {(!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE')) && (
-                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {['NONE', 'HALF', 'FULL'].map((opt) => (
-                        <Button
-                          key={opt}
-                          variant={formData.moqOption === opt ? 'secondary' : 'ghost'}
-                          className={`flex-1 border min-w-[100px] ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
-                          onClick={() => updateFormData({ moqOption: opt })}
-                        >
-                          {opt === 'NONE' ? 'None' : opt.charAt(0) + opt.slice(1).toLowerCase()}
-                        </Button>
-                      ))}
-                      <div className="flex-1 min-w-[150px] relative">
-                        <Input 
-                          type="number"
-                          placeholder="Custom %"
-                          className={`pl-8 ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                          value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') {
-                              updateFormData({ moqOption: 'NONE' });
-                            } else {
-                              updateFormData({ moqOption: `${val}%` });
-                            }
-                          }}
-                        />
-                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
-                        <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {formData.baseType === 'SETUP_CHARGE' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-4 p-6 bg-slate-50 rounded-xl border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold uppercase text-slate-500">Setup Charge Configuration</Label>
-                      {(!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE')) && (
-                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {['NONE', 'HALF', 'FULL'].map((opt) => (
-                        <Button
-                          key={opt}
-                          variant={formData.setupOption === opt ? 'secondary' : 'ghost'}
-                          className={`flex-1 border min-w-[100px] ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
-                          onClick={() => updateFormData({ setupOption: opt })}
-                        >
-                          {opt === 'NONE' ? 'None' : opt.charAt(0) + opt.slice(1).toLowerCase()}
-                        </Button>
-                      ))}
-                      <div className="flex-1 min-w-[150px] relative">
-                        <Input 
-                          type="number"
-                          placeholder="Custom %"
-                          className={`pl-8 ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                          value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') {
-                              updateFormData({ setupOption: 'NONE' });
-                            } else {
-                              updateFormData({ setupOption: `${val}%` });
-                            }
-                          }}
-                        />
-                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
-                        <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                    {logicType === 'SETUP_CHARGE' && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-4 p-6 bg-slate-50 rounded-xl border"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="h-5 w-1 bg-primary rounded-full" />
+                          <span className="text-sm font-bold text-slate-800">Setup Charge</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold uppercase text-slate-500">Setup Charge Configuration</Label>
+                          {(!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE')) && (
+                            <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {['NONE', 'HALF', 'FULL'].map((m) => (
+                            <Button
+                              key={m}
+                              variant={formData.setupOption === m ? 'secondary' : 'ghost'}
+                              className={`flex-1 border min-w-[100px] ${formData.setupOption === m ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
+                              onClick={() => updateFormData({ setupOption: m })}
+                            >
+                              {m === 'NONE' ? 'Standard' : m === 'HALF' ? '1/2 Setup' : 'Full Setup'}
+                            </Button>
+                          ))}
+                          <div className="flex-1 min-w-[150px] relative">
+                            <Input 
+                              placeholder="Custom %"
+                              className={`pl-8 ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                              value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  updateFormData({ setupOption: 'NONE' });
+                                } else {
+                                  updateFormData({ setupOption: val.endsWith('%') ? val : `${val}%` });
+                                }
+                              }}
+                            />
+                            <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
+                            <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
