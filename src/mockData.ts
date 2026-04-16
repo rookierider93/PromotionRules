@@ -62,7 +62,7 @@ export const MOCK_RULES: DiscountRule[] = [
     baseType: 'SHIPPING_DISCOUNT',
     combinableWith: ['EQP', 'FLAT_DISCOUNT'],
     shippingDiscountType: 'FREE',
-    shippingMethod: 'standard',
+    shippingMethods: ['UPS-Ground#1ab20e81-97c8-464e-81be-15170c9e5ae5'],
     minOrderAmount: 200,
     flatDiscountType: 'AMOUNT',
     tieredFlatDiscounts: [{ minOrderAmount: 0, discountAmount: 0 }],

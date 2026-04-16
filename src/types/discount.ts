@@ -39,7 +39,7 @@ export interface DiscountRule {
   
   // Shipping Discount Specifics
   shippingDiscountType?: 'PERCENTAGE' | 'AMOUNT' | 'FREE';
-  shippingMethod?: string;
+  shippingMethods?: string[];
   
   // Targeting & Validity Specifics
   applyOnFirstTimeBuyer?: boolean;

@@ -10,7 +10,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +29,56 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { DiscountRule, DiscountScope } from '@/src/types/discount';
+
+const SHIPPING_METHODS = [
+  { label: 'UPS Ground', value: 'UPS-Ground#1ab20e81-97c8-464e-81be-15170c9e5ae5' },
+  { label: 'FedEx Ground', value: 'FedEx-Ground#ebd983c4-cdae-44b5-8c0c-b6bd83957c1c' },
+  { label: 'UPS 3 Day Select', value: 'UPS-3-Day-Select#6ec326f6-1d99-4c5b-b674-eb5c0d3e41c5' },
+  { label: 'UPS 2nd Day Air', value: 'UPS-2nd-Day-Air#e632d2a0-7f16-404c-a550-4526caba8895' },
+  { label: 'UPS Next Day Air Saver', value: 'UPS-Next-Day-Air-Saver#a9409edd-92d1-4f96-8652-6db971dafd30' },
+  { label: 'UPS Next Day Air Early AM', value: 'UPS-Next-Day-Air-Early-AM#c5a28b65-5229-4e75-8721-0e1873dc4dab' },
+  { label: 'UPS Next Day Air', value: 'UPS-Next-Day-Air#be9940ec-9491-45d8-9d48-c118fe8d0afb' },
+  { label: 'FIRST OVERNIGHT', value: 'FIRST-OVERNIGHT#1a78b843-fed2-415f-9c71-6d895adcfbb1' },
+  { label: 'PRIORITY OVERNIGHT', value: 'PRIORITY-OVERNIGHT#056d676d-fbfa-4559-b8b8-a822df6aaf7f' },
+  { label: 'STANDARD OVERNIGHT', value: 'STANDARD-OVERNIGHT#8af4c637-02f4-407b-b1b0-c5cd2316c299' },
+  { label: 'FEDEX 2 DAY AM', value: 'FEDEX-2-DAY-AM#5d255074-1399-4c5d-b2be-1a6866e75625' },
+  { label: 'FEDEX 2 DAY', value: 'FEDEX-2-DAY#5650cf47-e405-45c4-b9ee-837017b3195e' },
+  { label: 'FEDEX EXPRESS SAVER', value: 'FEDEX-EXPRESS-SAVER#96f45c59-1e2f-4f34-bdea-00f4d08b8e84' },
+  { label: 'FedEx Ground®', value: 'FedEx-Ground®#a550fb9c-9eea-4b09-b480-99b03a2628e7' },
+  { label: 'FedEx 2Day®', value: 'FedEx-2Day®#7a2ac0e5-8440-4685-a486-dded48b4bd8e' },
+  { label: 'FedEx 2Day® A.M.', value: 'FedEx-2Day®-A.M.#18b540bd-1141-4e4e-881e-b3bc9b080c80' },
+  { label: 'FedEx Express Saver®', value: 'FedEx-Express-Saver®#ac1755c6-a31a-4ad7-b720-4181242a903f' },
+  { label: 'FedEx International Priority Express®', value: 'FedEx-International-Priority-Express®#e4b806b9-cf07-4710-bef1-547829a4b6d2' },
+  { label: 'FedEx First Overnight®', value: 'FedEx-First-Overnight®#5ed30b9d-18f7-4bb3-92f5-cfcf802dad9c' },
+  { label: 'FedEx Home Delivery®', value: 'FedEx-Home-Delivery®#9ab274be-e048-4ddc-8c18-c645679af39a' },
+  { label: 'FedEx International Economy®', value: 'FedEx-International-Economy®#ede5c50d-7c11-4398-aa59-e15165a8893d' },
+  { label: 'FedEx International Priority®', value: 'FedEx-International-Priority®#9ec63cbf-032f-4a5e-b12f-79570ef172bb' },
+  { label: 'FedEx International Priority® Express', value: 'FedEx-International-Priority®-Express#8a8e8629-a756-4291-92d7-0a1399ac7027' },
+  { label: 'FedEx Priority Overnight®', value: 'FedEx-Priority-Overnight®#3f35ef5e-a4ef-4282-8c93-accff1ad2067' },
+  { label: 'FedEx Standard Overnight®', value: 'FedEx-Standard-Overnight®#bbd44575-e3d8-4ed7-9e7e-8fce2625ab3c' },
+  { label: 'UPS Ground®', value: 'UPS-Ground®#081904e6-7ded-4f8c-99ad-f98f12dd81f1' },
+  { label: 'UPS 2nd Day Air®', value: 'UPS-2nd-Day-Air®#c35a5a2e-6f91-4fd7-ad66-01e92199e25e' },
+  { label: 'UPS 2nd Day Air A.M.®', value: 'UPS-2nd-Day-Air-A.M.®#da68b825-4da6-4c49-8305-e5499a849854' },
+  { label: 'UPS 3 Day Select®', value: 'UPS-3-Day-Select®#da68b825-4da6-4c49-8305-e5499a849854' },
+  { label: 'UPS Ground with Freight Pricing', value: 'UPS-Ground-with-Freight-Pricing#f60eb9c7-75d9-4a40-b9b9-d93062638bf0' },
+  { label: 'UPS Next Day Air®', value: 'UPS-Next-Day-Air®#038079be-8ff2-4f2c-bf9a-70f9e0187d66' },
+  { label: 'UPS Next Day Air Saver®', value: 'UPS-Next-Day-Air-Saver®#fb6bf978-8f0f-47b9-a044-f6d8198c8a1b' },
+  { label: 'UPS Next Day Air® Early A.M.®', value: 'UPS-Next-Day-Air®-Early-A.M.®#1c509c44-1f70-4e0c-9d94-429bbd94885a' },
+  { label: 'UPS Standard', value: 'UPS-Standard#1c509c44-1f70-4e0c-9d94-429bbd94885a' },
+  { label: 'UPS SurePost®', value: 'UPS-SurePost®#96dd2a7f-3d43-4ce4-9cb6-f9a4016b5a5f' },
+  { label: 'UPS SurePost® BPM', value: 'UPS-SurePost®-BPM#2466db65-9a02-494d-a2c6-8093dc84ecf0' },
+  { label: 'UPS Worldwide Expedited®', value: 'UPS-Worldwide-Expedited®#65bec6b5-f272-48b8-841e-e632f3b49a75' },
+  { label: 'UPS Worldwide Express®', value: 'UPS-Worldwide-Express®#049f27cb-98e7-49b4-a469-7d21a7ee1a14' },
+  { label: 'UPS Worldwide Saver®', value: 'UPS-Worldwide-Saver®#eb126671-c34d-4010-ae00-e42c697ea200' },
+  { label: 'First Class', value: 'First-Class#3833d435-4534-46c8-8a28-6848c9e3c222' },
+  { label: 'Ground Advantage', value: 'Ground-Advantage#3684cb8a-1b9a-4f80-bc0f-6b407dc42b57' },
+  { label: 'Priority Express', value: 'Priority-Express#6d9247f1-675b-4c6f-9721-a5c32b204292' },
+  { label: 'Priority Mail', value: 'Priority-Mail#f97359d0-2145-4cf6-bffa-9bea729f5895' },
+  { label: 'UPS Next Day Air Early', value: 'UPS-Next-Day-Air-Early#ffe54635-31e8-4b74-a039-27e6c47b54ce' },
+  { label: 'UPS 2nd Day Air AM', value: 'UPS-2nd-Day-Air-AM#3237ad29-1a9f-4f1b-86fc-8d2b3e567c83' },
+];
 
 interface UnifiedDiscountFormProps {
   initialData?: Partial<DiscountRule>;
@@ -36,6 +87,7 @@ interface UnifiedDiscountFormProps {
 }
 
 export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDiscountFormProps) {
+  const [isShippingMethodsOpen, setIsShippingMethodsOpen] = React.useState(false);
   const [formData, setFormData] = React.useState<Partial<DiscountRule>>({
     isAutomatic: false,
     baseType: 'EQP',
@@ -51,7 +103,7 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     tieredFlatDiscounts: [{ minOrderAmount: 0, discountAmount: 0 }],
     applyOnBasketPrice: false,
     shippingDiscountType: 'FREE',
-    shippingMethod: 'all',
+    shippingMethods: [],
     applyOnFirstTimeBuyer: false,
     promoCodeUseOneTime: false,
     applyOnItemPrice: false,
@@ -100,7 +152,14 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
       const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
                    formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
                    `$${formData.value} Off Shipping`;
-      mainRule = `${type}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      
+      const methods = formData.shippingMethods || [];
+      const methodText = methods.length === 0 ? 'All Methods' : 
+                         methods.length === SHIPPING_METHODS.length ? 'All Methods' :
+                         methods.length === 1 ? SHIPPING_METHODS.find(m => m.value === methods[0])?.label :
+                         `${methods.length} Methods`;
+
+      mainRule = `${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
     }
 
     // Append shipping if it's not the base type but is configured (e.g. in Section 3)
@@ -108,9 +167,16 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
       const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
                    formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
                    `$${formData.value} Off Shipping`;
+      
+      const methods = formData.shippingMethods || [];
+      const methodText = methods.length === 0 ? 'All Methods' : 
+                         methods.length === SHIPPING_METHODS.length ? 'All Methods' :
+                         methods.length === 1 ? SHIPPING_METHODS.find(m => m.value === methods[0])?.label :
+                         `${methods.length} Methods`;
+
       // Only show if it's not just "Free Shipping" with no min (default) or if user changed something
-      if (formData.shippingDiscountType !== 'FREE' || (formData.minOrderAmount && formData.minOrderAmount > 0)) {
-        mainRule += ` + ${type}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      if (formData.shippingDiscountType !== 'FREE' || (formData.minOrderAmount && formData.minOrderAmount > 0) || methods.length > 0) {
+        mainRule += ` + ${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
       }
     }
 
@@ -496,22 +562,77 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500">Shipping Method</Label>
-                    <Select 
-                      value={formData.shippingMethod} 
-                      onValueChange={(val) => updateFormData({ shippingMethod: val })}
-                    >
-                      <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="Select method" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Shipping Methods</SelectItem>
-                        <SelectItem value="standard">Standard Shipping</SelectItem>
-                        <SelectItem value="express">Express Shipping</SelectItem>
-                        <SelectItem value="overnight">Overnight Shipping</SelectItem>
-                        <SelectItem value="international">International Shipping</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-xs font-bold text-slate-500">Shipping Methods</Label>
+                    <div className="border rounded-md bg-white overflow-hidden">
+                      <button 
+                        type="button"
+                        onClick={() => setIsShippingMethodsOpen(!isShippingMethodsOpen)}
+                        className="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">
+                            {formData.shippingMethods?.length === 0 ? 'All Shipping Methods' : 
+                             formData.shippingMethods?.length === SHIPPING_METHODS.length ? 'All Shipping Methods' :
+                             `${formData.shippingMethods?.length} Methods Selected`}
+                          </span>
+                          {formData.shippingMethods && formData.shippingMethods.length > 0 && formData.shippingMethods.length < SHIPPING_METHODS.length && (
+                            <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                              {formData.shippingMethods.map(v => SHIPPING_METHODS.find(m => m.value === v)?.label).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                        {isShippingMethodsOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                      </button>
+
+                      <motion.div
+                        initial={false}
+                        animate={{ height: isShippingMethodsOpen ? 'auto' : 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-2 border-t bg-slate-50 flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox 
+                              id="selectAllShipping"
+                              checked={formData.shippingMethods?.length === SHIPPING_METHODS.length}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  updateFormData({ shippingMethods: SHIPPING_METHODS.map(m => m.value) });
+                                } else {
+                                  updateFormData({ shippingMethods: [] });
+                                }
+                              }}
+                            />
+                            <Label htmlFor="selectAllShipping" className="text-xs font-bold cursor-pointer">Select All</Label>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {formData.shippingMethods?.length || 0} selected
+                          </span>
+                        </div>
+                        <ScrollArea className="h-[200px]">
+                          <div className="p-2 space-y-1">
+                            {SHIPPING_METHODS.map((method) => (
+                              <div key={method.value} className="flex items-center space-x-2 hover:bg-slate-50 p-1 rounded transition-colors">
+                                <Checkbox 
+                                  id={`method-${method.value}`}
+                                  checked={formData.shippingMethods?.includes(method.value)}
+                                  onCheckedChange={(checked) => {
+                                    const current = formData.shippingMethods || [];
+                                    if (checked) {
+                                      updateFormData({ shippingMethods: [...current, method.value] });
+                                    } else {
+                                      updateFormData({ shippingMethods: current.filter(v => v !== method.value) });
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`method-${method.value}`} className="text-xs cursor-pointer flex-1 py-1">
+                                  {method.label}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </motion.div>
+                    </div>
                   </div>
                 </div>
 
