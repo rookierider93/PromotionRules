@@ -26,7 +26,6 @@ export interface DiscountRule {
   // Unified Discount Structure
   isAutomatic: boolean;
   baseType: 'EQP' | 'FLAT_DISCOUNT' | 'SHIPPING_DISCOUNT';
-  combinableWith: ('EQP' | 'FLAT_DISCOUNT' | 'SHIPPING_DISCOUNT')[];
   eqpModifier: string; // 'NONE', '3%', '5%', or custom like '10%'
   moqOption: string; // 'NONE', 'HALF', 'FULL', or custom like '25%'
   setupOption: string; // 'NONE', 'HALF', 'FULL', or custom like '25%'

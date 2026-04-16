@@ -130,19 +130,12 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     promoCodeUseOneTime: false,
     applyOnItemPrice: false,
     applyOnItemPlusCharges: false,
-    combinableWith: [],
     ...initialData
   });
 
   const updateFormData = (data: Partial<DiscountRule>) => {
     setFormData(prev => {
       const next = { ...prev, ...data };
-      
-      // If baseType changed, remove it from combinableWith if it was there
-      if (data.baseType && next.combinableWith) {
-        next.combinableWith = next.combinableWith.filter(t => t !== data.baseType);
-      }
-      
       return next;
     });
   };
@@ -992,20 +985,6 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                 <Badge className={`${formData.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'} border-none text-[10px]`}>
                   {formData.status}
                 </Badge>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-slate-400">Combinable With</span>
-                <div className="flex flex-col items-end gap-1">
-                  {formData.combinableWith && formData.combinableWith.length > 0 ? (
-                    formData.combinableWith.map(t => (
-                      <Badge key={t} variant="outline" className="text-[9px] border-slate-600 text-slate-300 px-1 py-0">
-                        {t.replace('_', ' ')}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-[10px] text-slate-500 italic">None</span>
-                  )}
-                </div>
               </div>
             </div>
 
