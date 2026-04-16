@@ -90,7 +90,7 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
   const [isShippingMethodsOpen, setIsShippingMethodsOpen] = React.useState(false);
   const [formData, setFormData] = React.useState<Partial<DiscountRule>>({
     isAutomatic: false,
-    baseType: 'EQP',
+    baseType: 'SHIPPING_DISCOUNT',
     eqpModifier: 'NONE',
     moqOption: 'NONE',
     setupOption: 'NONE',
@@ -149,21 +149,11 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
       
       mainRule = parts.concat(addons).join(', ');
     } else if (formData.baseType === 'SHIPPING_DISCOUNT') {
-      const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
-                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
-                   `$${formData.value} Off Shipping`;
-      
-      const methods = formData.shippingMethods || [];
-      const methodText = methods.length === 0 ? 'All Methods' : 
-                         methods.length === SHIPPING_METHODS.length ? 'All Methods' :
-                         methods.length === 1 ? SHIPPING_METHODS.find(m => m.value === methods[0])?.label :
-                         `${methods.length} Methods`;
-
-      mainRule = `${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      mainRule = 'Shipping Only';
     }
 
-    // Append shipping if it's not the base type but is configured (e.g. in Section 3)
-    if (formData.baseType !== 'SHIPPING_DISCOUNT' && formData.shippingDiscountType) {
+    // Append shipping details if configured
+    if (formData.shippingDiscountType) {
       const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
                    formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
                    `$${formData.value} Off Shipping`;
@@ -174,9 +164,14 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                          methods.length === 1 ? SHIPPING_METHODS.find(m => m.value === methods[0])?.label :
                          `${methods.length} Methods`;
 
-      // Only show if it's not just "Free Shipping" with no min (default) or if user changed something
-      if (formData.shippingDiscountType !== 'FREE' || (formData.minOrderAmount && formData.minOrderAmount > 0) || methods.length > 0) {
-        mainRule += ` + ${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      // If it's the base type, we just use the details
+      if (formData.baseType === 'SHIPPING_DISCOUNT') {
+        mainRule = `${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      } else {
+        // Append if it's an add-on and user changed something from default
+        if (formData.shippingDiscountType !== 'FREE' || (formData.minOrderAmount && formData.minOrderAmount > 0) || methods.length > 0) {
+          mainRule += ` + ${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+        }
       }
     }
 
@@ -265,6 +260,13 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   <Label className="text-muted-foreground">Base Discount</Label>
                   <div className="flex flex-wrap gap-4">
                     <Button 
+                      variant={formData.baseType === 'SHIPPING_DISCOUNT' ? 'default' : 'outline'}
+                      className="flex-1 h-16 text-lg font-bold min-w-[140px]"
+                      onClick={() => updateFormData({ baseType: 'SHIPPING_DISCOUNT' })}
+                    >
+                      No Product Discount
+                    </Button>
+                    <Button 
                       variant={formData.baseType === 'EQP' ? 'default' : 'outline'}
                       className="flex-1 h-16 text-lg font-bold min-w-[140px]"
                       onClick={() => updateFormData({ baseType: 'EQP' })}
@@ -276,12 +278,13 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                       className="flex-1 h-16 text-lg font-bold min-w-[140px]"
                       onClick={() => updateFormData({ baseType: 'FLAT_DISCOUNT' })}
                     >
-                     Amount Off Products
+                     Flat Discount on Products
                     </Button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {formData.baseType !== 'SHIPPING_DISCOUNT' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* MOQ Add-on */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -362,6 +365,7 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                       </div>
                     </div>
                   </div>
+                )}
 
                 {formData.baseType === 'EQP' && (
                   <motion.div 
