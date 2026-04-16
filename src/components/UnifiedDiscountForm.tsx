@@ -38,7 +38,6 @@ interface UnifiedDiscountFormProps {
 export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDiscountFormProps) {
   const [formData, setFormData] = React.useState<Partial<DiscountRule>>({
     isAutomatic: false,
-    isProductLevel: false,
     baseType: 'EQP',
     eqpModifier: 'NONE',
     moqOption: 'NONE',
@@ -57,40 +56,65 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     promoCodeUseOneTime: false,
     applyOnItemPrice: false,
     applyOnItemPlusCharges: false,
+    combinableWith: [],
     ...initialData
   });
 
   const updateFormData = (data: Partial<DiscountRule>) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    setFormData(prev => {
+      const next = { ...prev, ...data };
+      
+      // If baseType changed, remove it from combinableWith if it was there
+      if (data.baseType && next.combinableWith) {
+        next.combinableWith = next.combinableWith.filter(t => t !== data.baseType);
+      }
+      
+      return next;
+    });
   };
 
   const generateRuleString = () => {
-    if (formData.baseType === 'SHIPPING_DISCOUNT') {
-      const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
-                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
-                   `$${formData.value} Off Shipping`;
-      return `${type}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
-    }
+    let mainRule = '';
     
     if (formData.baseType === 'FLAT_DISCOUNT') {
       if (formData.flatDiscountType === 'PERCENTAGE') {
-        return `${formData.value || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
+        mainRule = `${formData.value || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
+      } else {
+        const tiers = formData.tieredFlatDiscounts || [];
+        if (tiers.length === 1) {
+          mainRule = `$${tiers[0].discountAmount} Flat Discount${tiers[0].minOrderAmount ? ` (Min $${tiers[0].minOrderAmount})` : ''}`;
+        } else {
+          mainRule = `${tiers.length} Tiered Flat Discount`;
+        }
       }
-      const tiers = formData.tieredFlatDiscounts || [];
-      if (tiers.length === 1) {
-        return `$${tiers[0].discountAmount} Flat Discount${tiers[0].minOrderAmount ? ` (Min $${tiers[0].minOrderAmount})` : ''}`;
-      }
-      return `${tiers.length} Tiered Flat Discount`;
+    } else if (formData.baseType === 'EQP') {
+      let parts = ['EQP'];
+      if (formData.eqpModifier !== 'NONE') parts[0] += ` - ${formData.eqpModifier}`;
+      
+      let addons = [];
+      if (formData.moqOption !== 'NONE') addons.push(`${formData.moqOption === 'HALF' ? 'Half' : 'Full'} MOQ`);
+      if (formData.setupOption !== 'NONE') addons.push(`${formData.setupOption === 'HALF' ? 'Half' : 'Full'} Setup Charge`);
+      
+      mainRule = parts.concat(addons).join(', ');
+    } else if (formData.baseType === 'SHIPPING_DISCOUNT') {
+      const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
+                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
+                   `$${formData.value} Off Shipping`;
+      mainRule = `${type}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
     }
-    
-    let parts = ['EQP'];
-    if (formData.eqpModifier !== 'NONE') parts[0] += ` - ${formData.eqpModifier}`;
-    
-    let addons = [];
-    if (formData.moqOption !== 'NONE') addons.push(`${formData.moqOption === 'HALF' ? 'Half' : 'Full'} MOQ`);
-    if (formData.setupOption !== 'NONE') addons.push(`${formData.setupOption === 'HALF' ? 'Half' : 'Full'} Setup Charge`);
-    
-    return parts.concat(addons).join(', ');
+
+    // Append shipping if it's not the base type but is configured (e.g. in Section 3)
+    if (formData.baseType !== 'SHIPPING_DISCOUNT' && formData.shippingDiscountType) {
+      const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
+                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
+                   `$${formData.value} Off Shipping`;
+      // Only show if it's not just "Free Shipping" with no min (default) or if user changed something
+      if (formData.shippingDiscountType !== 'FREE' || (formData.minOrderAmount && formData.minOrderAmount > 0)) {
+        mainRule += ` + ${type}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+      }
+    }
+
+    return mainRule;
   };
 
   return (
@@ -126,23 +150,12 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Is Active</Label>
-                  <div className="flex items-center">
-                    <Switch 
-                      checked={formData.status === 'ACTIVE'}
-                      onCheckedChange={(checked) => updateFormData({ status: checked ? 'ACTIVE' : 'INACTIVE' })}
-                      className="data-checked:bg-emerald-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label>Discount Method</Label>
                   <div className="flex gap-2">
                     <Button 
                       variant={!formData.isAutomatic ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => updateFormData({ isAutomatic: false, isProductLevel: false })}
+                      onClick={() => updateFormData({ isAutomatic: false })}
                     >
                       Discount Code
                     </Button>
@@ -157,7 +170,7 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {!formData.isAutomatic ? (
+                  {!formData.isAutomatic && (
                     <div className="space-y-2">
                       <Label htmlFor="promoCode">Discount Code</Label>
                       <Input 
@@ -166,21 +179,6 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                         value={formData.promoCode || ''} 
                         onChange={e => updateFormData({ promoCode: e.target.value.toUpperCase() })}
                       />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="productLevel">Is Product Level</Label>
-                      <div className="flex items-center">
-                        <Switch 
-                          id="productLevel"
-                          checked={formData.isProductLevel}
-                          onCheckedChange={(checked) => updateFormData({ 
-                            isProductLevel: !!checked,
-                            baseType: checked && formData.baseType === 'SHIPPING_DISCOUNT' ? 'EQP' : formData.baseType
-                          })}
-                          className="data-checked:bg-emerald-500"
-                        />
-                      </div>
                     </div>
                   )}
                 </div>
@@ -212,22 +210,12 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                       className="flex-1 h-16 text-lg font-bold min-w-[140px]"
                       onClick={() => updateFormData({ baseType: 'FLAT_DISCOUNT' })}
                     >
-                      Flat Discount
+                     Amount Off Products
                     </Button>
-                    {!formData.isProductLevel && (
-                      <Button 
-                        variant={formData.baseType === 'SHIPPING_DISCOUNT' ? 'default' : 'outline'}
-                        className="flex-1 h-16 text-lg font-bold min-w-[140px]"
-                        onClick={() => updateFormData({ baseType: 'SHIPPING_DISCOUNT' })}
-                      >
-                        Shipping Discount
-                      </Button>
-                    )}
                   </div>
                 </div>
 
-                {!formData.isProductLevel && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* MOQ Add-on */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -236,17 +224,35 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                           {formData.moqOption !== 'NONE' ? 'Enabled' : 'Disabled'}
                         </Badge>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {['NONE', 'HALF', 'FULL'].map((opt) => (
                           <Button
                             key={opt}
                             variant={formData.moqOption === opt ? 'secondary' : 'outline'}
-                            className={`flex-1 text-xs ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                            onClick={() => updateFormData({ moqOption: opt as any })}
+                            className={`flex-1 text-xs min-w-[80px] ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                            onClick={() => updateFormData({ moqOption: opt })}
                           >
                             {opt.charAt(0) + opt.slice(1).toLowerCase()}
                           </Button>
                         ))}
+                        <div className="flex-1 min-w-[120px] relative">
+                          <Input 
+                            type="number"
+                            placeholder="Custom %"
+                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                            value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                updateFormData({ moqOption: 'NONE' });
+                              } else {
+                                updateFormData({ moqOption: `${val}%` });
+                              }
+                            }}
+                          />
+                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
+                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
+                        </div>
                       </div>
                     </div>
 
@@ -258,21 +264,38 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                           {formData.setupOption !== 'NONE' ? 'Enabled' : 'Disabled'}
                         </Badge>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {['NONE', 'HALF', 'FULL'].map((opt) => (
                           <Button
                             key={opt}
                             variant={formData.setupOption === opt ? 'secondary' : 'outline'}
-                            className={`flex-1 text-xs ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                            onClick={() => updateFormData({ setupOption: opt as any })}
+                            className={`flex-1 text-xs min-w-[80px] ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                            onClick={() => updateFormData({ setupOption: opt })}
                           >
                             {opt.charAt(0) + opt.slice(1).toLowerCase()}
                           </Button>
                         ))}
+                        <div className="flex-1 min-w-[120px] relative">
+                          <Input 
+                            type="number"
+                            placeholder="Custom %"
+                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                            value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                updateFormData({ setupOption: 'NONE' });
+                              } else {
+                                updateFormData({ setupOption: `${val}%` });
+                              }
+                            }}
+                          />
+                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
+                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                )}
 
                 {formData.baseType === 'EQP' && (
                   <motion.div 
@@ -318,94 +341,6 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   </motion.div>
                 )}
 
-                {formData.baseType === 'SHIPPING_DISCOUNT' && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6 p-6 bg-slate-50 rounded-xl border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-bold uppercase text-slate-500">Shipping Discount Configuration</Label>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          className="bg-white"
-                          value={formData.minOrderAmount || ''} 
-                          onChange={e => updateFormData({ minOrderAmount: parseFloat(e.target.value) || 0 })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500">Shipping Method</Label>
-                        <Select 
-                          value={formData.shippingMethod} 
-                          onValueChange={(val) => updateFormData({ shippingMethod: val })}
-                        >
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Select method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Shipping Methods</SelectItem>
-                            <SelectItem value="standard">Standard Shipping</SelectItem>
-                            <SelectItem value="express">Express Shipping</SelectItem>
-                            <SelectItem value="overnight">Overnight Shipping</SelectItem>
-                            <SelectItem value="international">International Shipping</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateFormData({ shippingDiscountType: 'FREE', value: 0 })}
-                        >
-                          Free Shipping
-                        </Button>
-                        <Button 
-                          variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
-                        >
-                          Amount ($)
-                        </Button>
-                        <Button 
-                          variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
-                        >
-                          Percentage (%)
-                        </Button>
-                      </div>
-                    </div>
-
-                    {formData.shippingDiscountType !== 'FREE' && (
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500">
-                          {formData.shippingDiscountType === 'AMOUNT' ? 'Discount Amount ($)' : 'Discount Percentage (%)'}
-                        </Label>
-                        <Input 
-                          type="number" 
-                          placeholder="0.00" 
-                          className="bg-white text-xl font-bold h-12"
-                          value={formData.value || ''} 
-                          onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
-                        />
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
                 {formData.baseType === 'FLAT_DISCOUNT' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
@@ -414,33 +349,18 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   >
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-bold uppercase text-slate-500">Flat Discount Configuration</Label>
-                      {!formData.isProductLevel && (
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="basketPrice" 
-                            checked={formData.applyOnBasketPrice}
-                            onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
-                          />
-                          <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
-                        </div>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="basketPrice" 
+                          checked={formData.applyOnBasketPrice}
+                          onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
+                        />
+                        <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
+                      </div>
                     </div>
 
-                    {formData.isProductLevel ? (
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold text-slate-500">Discount Percentage (%)</Label>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
-                          className="bg-white text-xl font-bold h-12"
-                          value={formData.value || ''} 
-                          onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0, flatDiscountType: 'PERCENTAGE' })}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <div className="space-y-2">
-                          <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold text-slate-500">Apply Discount As</Label>
                           <div className="flex gap-2">
                             <Button 
                               variant={formData.flatDiscountType === 'AMOUNT' ? 'default' : 'outline'}
@@ -549,8 +469,98 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                             </Button>
                           </div>
                         )}
-                      </>
+                      </motion.div>
                     )}
+                  </div>
+                </div>
+
+            <Separator />
+
+            {/* Section 3: Shipping Discount Configuration */}
+            <div className="space-y-8">
+              <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
+                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">3</span>
+                Shipping Discount Configuration
+              </div>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      className="bg-white"
+                      value={formData.minOrderAmount || ''} 
+                      onChange={e => updateFormData({ minOrderAmount: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-500">Shipping Method</Label>
+                    <Select 
+                      value={formData.shippingMethod} 
+                      onValueChange={(val) => updateFormData({ shippingMethod: val })}
+                    >
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Select method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Shipping Methods</SelectItem>
+                        <SelectItem value="standard">Standard Shipping</SelectItem>
+                        <SelectItem value="express">Express Shipping</SelectItem>
+                        <SelectItem value="overnight">Overnight Shipping</SelectItem>
+                        <SelectItem value="international">International Shipping</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => updateFormData({ shippingDiscountType: 'FREE', value: 0 })}
+                    >
+                      Free Shipping
+                    </Button>
+                    <Button 
+                      variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
+                    >
+                      Amount ($)
+                    </Button>
+                    <Button 
+                      variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
+                    >
+                      Percentage (%)
+                    </Button>
+                  </div>
+                </div>
+
+                {formData.shippingDiscountType !== 'FREE' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-2 pt-2"
+                  >
+                    <Label className="text-xs font-bold text-slate-500">
+                      {formData.shippingDiscountType === 'AMOUNT' ? 'Discount Amount ($)' : 'Discount Percentage (%)'}
+                    </Label>
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      className="bg-white text-xl font-bold h-12"
+                      value={formData.value || ''} 
+                      onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
+                    />
                   </motion.div>
                 )}
               </div>
@@ -558,13 +568,13 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
 
             <Separator />
 
-            {/* Section 3: Targeting & Validity */}
+            {/* Section 4: Targeting & Validity */}
             <div className="space-y-8">
               <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
-                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">3</span>
+                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">4</span>
                 Targeting & Validity
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <Label>Rule Scope</Label>
@@ -615,47 +625,57 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
 
               <Separator className="opacity-50" />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="firstTimeBuyer" 
-                      checked={formData.applyOnFirstTimeBuyer}
-                      onCheckedChange={(checked) => updateFormData({ applyOnFirstTimeBuyer: !!checked })}
-                    />
-                    <Label htmlFor="firstTimeBuyer" className="text-sm font-medium cursor-pointer">Apply On First-Time Buyer</Label>
-                  </div>
-
-                  {!formData.isAutomatic && (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id="oneTimeUse" 
-                        checked={formData.promoCodeUseOneTime}
-                        onCheckedChange={(checked) => updateFormData({ promoCodeUseOneTime: !!checked })}
-                      />
-                      <Label htmlFor="oneTimeUse" className="text-sm font-medium cursor-pointer">PromoCode Use One Time</Label>
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
+                  <Label htmlFor="isActive" className="text-sm font-medium cursor-pointer">Is Active</Label>
+                  <Switch 
+                    id="isActive"
+                    checked={formData.status === 'ACTIVE'}
+                    onCheckedChange={(checked) => updateFormData({ status: checked ? 'ACTIVE' : 'INACTIVE' })}
+                    className="data-checked:bg-emerald-500"
+                  />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="itemPrice" 
-                      checked={formData.applyOnItemPrice}
-                      onCheckedChange={(checked) => updateFormData({ applyOnItemPrice: !!checked })}
-                    />
-                    <Label htmlFor="itemPrice" className="text-sm font-medium cursor-pointer">Apply On Item Price</Label>
-                  </div>
+                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
+                  <Label htmlFor="firstTimeBuyer" className="text-sm font-medium cursor-pointer">Apply On First-Time Buyer</Label>
+                  <Switch 
+                    id="firstTimeBuyer" 
+                    checked={formData.applyOnFirstTimeBuyer}
+                    onCheckedChange={(checked) => updateFormData({ applyOnFirstTimeBuyer: !!checked })}
+                    className="data-checked:bg-emerald-500"
+                  />
+                </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="itemPlusCharges" 
-                      checked={formData.applyOnItemPlusCharges}
-                      onCheckedChange={(checked) => updateFormData({ applyOnItemPlusCharges: !!checked })}
+                {!formData.isAutomatic && (
+                  <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
+                    <Label htmlFor="oneTimeUse" className="text-sm font-medium cursor-pointer">PromoCode Use One Time</Label>
+                    <Switch 
+                      id="oneTimeUse" 
+                      checked={formData.promoCodeUseOneTime}
+                      onCheckedChange={(checked) => updateFormData({ promoCodeUseOneTime: !!checked })}
+                      className="data-checked:bg-emerald-500"
                     />
-                    <Label htmlFor="itemPlusCharges" className="text-sm font-medium cursor-pointer">Apply On Item + Charges</Label>
                   </div>
+                )}
+
+                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
+                  <Label htmlFor="itemPrice" className="text-sm font-medium cursor-pointer">Apply On Item Price</Label>
+                  <Switch 
+                    id="itemPrice" 
+                    checked={formData.applyOnItemPrice}
+                    onCheckedChange={(checked) => updateFormData({ applyOnItemPrice: !!checked })}
+                    className="data-checked:bg-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
+                  <Label htmlFor="itemPlusCharges" className="text-sm font-medium cursor-pointer">Apply On Item + Charges</Label>
+                  <Switch 
+                    id="itemPlusCharges" 
+                    checked={formData.applyOnItemPlusCharges}
+                    onCheckedChange={(checked) => updateFormData({ applyOnItemPlusCharges: !!checked })}
+                    className="data-checked:bg-emerald-500"
+                  />
                 </div>
               </div>
             </div>
@@ -691,14 +711,6 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   {formData.isAutomatic ? 'Automatic' : 'Code'}
                 </Badge>
               </div>
-              {formData.isAutomatic && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-400">Level</span>
-                  <span className="text-xs font-bold uppercase tracking-wider">
-                    {formData.isProductLevel ? 'Product' : 'Order'}
-                  </span>
-                </div>
-              )}
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-400">Scope</span>
                 <span className="text-xs font-bold uppercase tracking-wider">{formData.scope?.replace('_', ' ')}</span>
@@ -708,6 +720,20 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                 <Badge className={`${formData.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'} border-none text-[10px]`}>
                   {formData.status}
                 </Badge>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-xs text-slate-400">Combinable With</span>
+                <div className="flex flex-col items-end gap-1">
+                  {formData.combinableWith && formData.combinableWith.length > 0 ? (
+                    formData.combinableWith.map(t => (
+                      <Badge key={t} variant="outline" className="text-[9px] border-slate-600 text-slate-300 px-1 py-0">
+                        {t.replace('_', ' ')}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-[10px] text-slate-500 italic">None</span>
+                  )}
+                </div>
               </div>
             </div>
 
