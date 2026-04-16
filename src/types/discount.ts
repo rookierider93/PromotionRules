@@ -17,49 +17,53 @@ export interface TieredFlatDiscount {
   discountAmount: number;
 }
 
-export interface DiscountRule {
+export interface PromotionalRule {
   id: string;
   name: string;
   description?: string;
   logic: DiscountLogic;
-  value: number;
+  
   // Unified Discount Structure
   isAutomatic: boolean;
-  baseType: 'EQP' | 'FLAT_DISCOUNT' | 'SHIPPING_DISCOUNT';
+  baseType: 'EQP' | 'FLAT_DISCOUNT' | 'MOQ' | 'SETUP_CHARGE' | 'SHIPPING_DISCOUNT';
   eqpModifier: string; // 'NONE', '3%', '5%', or custom like '10%'
   moqOption: string; // 'NONE', 'HALF', 'FULL', or custom like '25%'
   setupOption: string; // 'NONE', 'HALF', 'FULL', or custom like '25%'
   
   // Flat Discount Specifics
   flatDiscountType?: 'PERCENTAGE' | 'AMOUNT';
+  flatDiscountValue?: number; // Unique field for flat discount value
   maxDiscountAmount?: number;
-  applyOnBasketPrice?: boolean;
+  flatDiscountApplyOnBasket?: boolean; // Unique field
   tieredFlatDiscounts?: TieredFlatDiscount[];
   
+  // Free Product Specifics
+  isFreeProduct?: boolean;
+  freeProductIds?: string[];
+  freeProductMinOrderAmount?: number; // Unique field
+  freeProductApplyOnBasket?: boolean; // Unique field
+
   // Shipping Discount Specifics
-  shippingDiscountType?: 'PERCENTAGE' | 'AMOUNT' | 'FREE';
+  shippingDiscountType?: 'FREE' | 'PERCENTAGE' | 'AMOUNT';
+  shippingDiscountValue?: number;
   shippingMethods?: string[];
+  shippingMinOrderAmount?: number;
   
   // Targeting & Validity Specifics
   applyOnFirstTimeBuyer?: boolean;
   promoCodeUseOneTime?: boolean;
-  applyOnItemPrice?: boolean;
   applyOnItemPlusCharges?: boolean;
   
-  isFreeProduct?: boolean;
-  freeProductIds?: string[];
-  
-  minOrderAmount?: number;
   promoCode?: string;
   scope: DiscountScope;
-  targetIds: string[]; // Category IDs or Product IDs
+  
+  // Separate Targeting Fields
+  categoryIds?: string[];
+  productIds?: string[];
+  customerGroupIds?: string[];
+  
   status: 'ACTIVE' | 'INACTIVE';
   startDate: string;
   endDate: string;
-  isFirstTimeBuyerOnly?: boolean;
-  isOneTimeUseOnly?: boolean;
-  applyOnItemPriceOnly?: boolean;
   maxLimitPerUser?: number;
-  customerGroupIds?: string[];
-  customerIds?: string[]; // For CUSTOM_GROUP specific targeting
 }

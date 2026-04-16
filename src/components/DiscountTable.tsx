@@ -30,15 +30,15 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { DiscountRule } from '@/src/types/discount';
+import { PromotionalRule } from '@/src/types/discount';
 
-interface DiscountTableProps {
-  rules: DiscountRule[];
+interface PromotionalRulesTableProps {
+  rules: PromotionalRule[];
   onAddRule: () => void;
-  onEditRule: (rule: DiscountRule) => void;
+  onEditRule: (rule: PromotionalRule) => void;
 }
 
-export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTableProps) {
+export function PromotionalRulesTable({ rules, onAddRule, onEditRule }: PromotionalRulesTableProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [typeFilter, setTypeFilter] = React.useState<string>('ALL');
 
@@ -135,24 +135,24 @@ export function DiscountTable({ rules, onAddRule, onEditRule }: DiscountTablePro
                     <span className="text-slate-400 font-normal italic text-xs">Tiered</span>
                   ) : rule.baseType === 'FLAT_DISCOUNT' ? (
                     rule.flatDiscountType === 'PERCENTAGE' ? (
-                      `${rule.value}%`
+                      `${rule.flatDiscountValue}%`
                     ) : (
                       rule.tieredFlatDiscounts && rule.tieredFlatDiscounts.length > 1 ? (
                         <span className="text-slate-400 font-normal italic text-xs">Multi-Tier</span>
                       ) : (
-                        `$${rule.tieredFlatDiscounts?.[0]?.discountAmount || rule.value}`
+                        `$${rule.tieredFlatDiscounts?.[0]?.discountAmount || rule.flatDiscountValue}`
                       )
                     )
                   ) : rule.baseType === 'SHIPPING_DISCOUNT' ? (
                     rule.shippingDiscountType === 'FREE' ? (
                       <span className="text-green-600">FREE</span>
                     ) : rule.shippingDiscountType === 'PERCENTAGE' ? (
-                      `${rule.value}%`
+                      `${rule.shippingDiscountValue}%`
                     ) : (
-                      `$${rule.value}`
+                      `$${rule.shippingDiscountValue}`
                     )
                   ) : (
-                    `$${rule.value}`
+                    `$${rule.flatDiscountValue || 0}`
                   )}
                 </div>
 

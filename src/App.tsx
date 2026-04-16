@@ -26,25 +26,25 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DiscountTable } from './components/DiscountTable';
-import { UnifiedDiscountForm } from './components/UnifiedDiscountForm';
+import { PromotionalRulesTable } from './components/DiscountTable';
+import { UnifiedPromotionalRuleForm } from './components/UnifiedDiscountForm';
 import { MOCK_RULES } from './mockData';
-import { DiscountRule } from './types/discount';
+import { PromotionalRule } from './types/discount';
 
 export default function App() {
-  const [rules, setRules] = React.useState<DiscountRule[]>(MOCK_RULES);
+  const [rules, setRules] = React.useState<PromotionalRule[]>(MOCK_RULES);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [editingRule, setEditingRule] = React.useState<DiscountRule | null>(null);
+  const [editingRule, setEditingRule] = React.useState<PromotionalRule | null>(null);
 
-  const handleSaveRule = (ruleData: Partial<DiscountRule>) => {
+  const handleSaveRule = (ruleData: Partial<PromotionalRule>) => {
     if (editingRule) {
-      setRules(prev => prev.map(r => r.id === editingRule.id ? { ...r, ...ruleData } as DiscountRule : r));
+      setRules(prev => prev.map(r => r.id === editingRule.id ? { ...r, ...ruleData } as PromotionalRule : r));
     } else {
-      const newRule: DiscountRule = {
+      const newRule: PromotionalRule = {
         ...ruleData,
         id: Math.random().toString(36).substr(2, 9),
         status: 'ACTIVE',
-      } as DiscountRule;
+      } as PromotionalRule;
       setRules(prev => [newRule, ...prev]);
     }
     setIsFormOpen(false);
@@ -57,7 +57,7 @@ export default function App() {
       <header className="h-16 border-b bg-white flex items-center justify-between px-6 z-10">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-medium text-slate-700 flex items-center gap-2">
-            Discount Management
+            Promotional Rules
             <Info className="w-4 h-4 text-slate-400 cursor-help" />
           </h1>
         </div>
@@ -138,16 +138,16 @@ export default function App() {
                 <div className="flex items-center justify-between mb-8">
                   <div>
                     <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                      {editingRule ? 'Edit Discount Rule' : 'Create New Discount Rule'}
+                      {editingRule ? 'Edit Promotional Rule' : 'Create New Promotional Rule'}
                     </h2>
-                    <p className="text-slate-500 mt-1">Configure your dynamic EQP or Flat discount logic below.</p>
+                    <p className="text-slate-500 mt-1">Configure your dynamic EQP or Flat promotion logic below.</p>
                   </div>
                   <Button variant="ghost" onClick={() => setIsFormOpen(false)}>
                     <Menu className="w-4 h-4 mr-2" />
                     Back to Dashboard
                   </Button>
                 </div>
-                <UnifiedDiscountForm 
+                <UnifiedPromotionalRuleForm 
                   initialData={editingRule || undefined}
                   onSave={handleSaveRule} 
                   onCancel={() => {
@@ -161,8 +161,8 @@ export default function App() {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                   <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Discount Management</h2>
-                    <p className="text-slate-500 mt-1">Manage all your promotion codes and customer-specific discounts in one unified system.</p>
+                    <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Promotional Rules</h2>
+                    <p className="text-slate-500 mt-1">Manage all your promotion codes and customer-specific rules in one unified system.</p>
                   </div>
                   <Button size="lg" className="shadow-lg shadow-primary/20" onClick={() => setIsFormOpen(true)}>
                     <Plus className="w-5 h-5 mr-2" />
@@ -209,7 +209,7 @@ export default function App() {
 
                 {/* Main Content Area */}
                 <div className="mt-4">
-                  <DiscountTable 
+                  <PromotionalRulesTable 
                     rules={rules} 
                     onAddRule={() => setIsFormOpen(true)} 
                     onEditRule={(r) => {

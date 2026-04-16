@@ -32,55 +32,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DiscountRule, DiscountScope } from '@/src/types/discount';
-
-const SHIPPING_METHODS = [
-  { label: 'UPS Ground', value: 'UPS-Ground#1ab20e81-97c8-464e-81be-15170c9e5ae5' },
-  { label: 'FedEx Ground', value: 'FedEx-Ground#ebd983c4-cdae-44b5-8c0c-b6bd83957c1c' },
-  { label: 'UPS 3 Day Select', value: 'UPS-3-Day-Select#6ec326f6-1d99-4c5b-b674-eb5c0d3e41c5' },
-  { label: 'UPS 2nd Day Air', value: 'UPS-2nd-Day-Air#e632d2a0-7f16-404c-a550-4526caba8895' },
-  { label: 'UPS Next Day Air Saver', value: 'UPS-Next-Day-Air-Saver#a9409edd-92d1-4f96-8652-6db971dafd30' },
-  { label: 'UPS Next Day Air Early AM', value: 'UPS-Next-Day-Air-Early-AM#c5a28b65-5229-4e75-8721-0e1873dc4dab' },
-  { label: 'UPS Next Day Air', value: 'UPS-Next-Day-Air#be9940ec-9491-45d8-9d48-c118fe8d0afb' },
-  { label: 'FIRST OVERNIGHT', value: 'FIRST-OVERNIGHT#1a78b843-fed2-415f-9c71-6d895adcfbb1' },
-  { label: 'PRIORITY OVERNIGHT', value: 'PRIORITY-OVERNIGHT#056d676d-fbfa-4559-b8b8-a822df6aaf7f' },
-  { label: 'STANDARD OVERNIGHT', value: 'STANDARD-OVERNIGHT#8af4c637-02f4-407b-b1b0-c5cd2316c299' },
-  { label: 'FEDEX 2 DAY AM', value: 'FEDEX-2-DAY-AM#5d255074-1399-4c5d-b2be-1a6866e75625' },
-  { label: 'FEDEX 2 DAY', value: 'FEDEX-2-DAY#5650cf47-e405-45c4-b9ee-837017b3195e' },
-  { label: 'FEDEX EXPRESS SAVER', value: 'FEDEX-EXPRESS-SAVER#96f45c59-1e2f-4f34-bdea-00f4d08b8e84' },
-  { label: 'FedEx Ground®', value: 'FedEx-Ground®#a550fb9c-9eea-4b09-b480-99b03a2628e7' },
-  { label: 'FedEx 2Day®', value: 'FedEx-2Day®#7a2ac0e5-8440-4685-a486-dded48b4bd8e' },
-  { label: 'FedEx 2Day® A.M.', value: 'FedEx-2Day®-A.M.#18b540bd-1141-4e4e-881e-b3bc9b080c80' },
-  { label: 'FedEx Express Saver®', value: 'FedEx-Express-Saver®#ac1755c6-a31a-4ad7-b720-4181242a903f' },
-  { label: 'FedEx International Priority Express®', value: 'FedEx-International-Priority-Express®#e4b806b9-cf07-4710-bef1-547829a4b6d2' },
-  { label: 'FedEx First Overnight®', value: 'FedEx-First-Overnight®#5ed30b9d-18f7-4bb3-92f5-cfcf802dad9c' },
-  { label: 'FedEx Home Delivery®', value: 'FedEx-Home-Delivery®#9ab274be-e048-4ddc-8c18-c645679af39a' },
-  { label: 'FedEx International Economy®', value: 'FedEx-International-Economy®#ede5c50d-7c11-4398-aa59-e15165a8893d' },
-  { label: 'FedEx International Priority®', value: 'FedEx-International-Priority®#9ec63cbf-032f-4a5e-b12f-79570ef172bb' },
-  { label: 'FedEx International Priority® Express', value: 'FedEx-International-Priority®-Express#8a8e8629-a756-4291-92d7-0a1399ac7027' },
-  { label: 'FedEx Priority Overnight®', value: 'FedEx-Priority-Overnight®#3f35ef5e-a4ef-4282-8c93-accff1ad2067' },
-  { label: 'FedEx Standard Overnight®', value: 'FedEx-Standard-Overnight®#bbd44575-e3d8-4ed7-9e7e-8fce2625ab3c' },
-  { label: 'UPS Ground®', value: 'UPS-Ground®#081904e6-7ded-4f8c-99ad-f98f12dd81f1' },
-  { label: 'UPS 2nd Day Air®', value: 'UPS-2nd-Day-Air®#c35a5a2e-6f91-4fd7-ad66-01e92199e25e' },
-  { label: 'UPS 2nd Day Air A.M.®', value: 'UPS-2nd-Day-Air-A.M.®#da68b825-4da6-4c49-8305-e5499a849854' },
-  { label: 'UPS 3 Day Select®', value: 'UPS-3-Day-Select®#da68b825-4da6-4c49-8305-e5499a849854' },
-  { label: 'UPS Ground with Freight Pricing', value: 'UPS-Ground-with-Freight-Pricing#f60eb9c7-75d9-4a40-b9b9-d93062638bf0' },
-  { label: 'UPS Next Day Air®', value: 'UPS-Next-Day-Air®#038079be-8ff2-4f2c-bf9a-70f9e0187d66' },
-  { label: 'UPS Next Day Air Saver®', value: 'UPS-Next-Day-Air-Saver®#fb6bf978-8f0f-47b9-a044-f6d8198c8a1b' },
-  { label: 'UPS Next Day Air® Early A.M.®', value: 'UPS-Next-Day-Air®-Early-A.M.®#1c509c44-1f70-4e0c-9d94-429bbd94885a' },
-  { label: 'UPS Standard', value: 'UPS-Standard#1c509c44-1f70-4e0c-9d94-429bbd94885a' },
-  { label: 'UPS SurePost®', value: 'UPS-SurePost®#96dd2a7f-3d43-4ce4-9cb6-f9a4016b5a5f' },
-  { label: 'UPS SurePost® BPM', value: 'UPS-SurePost®-BPM#2466db65-9a02-494d-a2c6-8093dc84ecf0' },
-  { label: 'UPS Worldwide Expedited®', value: 'UPS-Worldwide-Expedited®#65bec6b5-f272-48b8-841e-e632f3b49a75' },
-  { label: 'UPS Worldwide Express®', value: 'UPS-Worldwide-Express®#049f27cb-98e7-49b4-a469-7d21a7ee1a14' },
-  { label: 'UPS Worldwide Saver®', value: 'UPS-Worldwide-Saver®#eb126671-c34d-4010-ae00-e42c697ea200' },
-  { label: 'First Class', value: 'First-Class#3833d435-4534-46c8-8a28-6848c9e3c222' },
-  { label: 'Ground Advantage', value: 'Ground-Advantage#3684cb8a-1b9a-4f80-bc0f-6b407dc42b57' },
-  { label: 'Priority Express', value: 'Priority-Express#6d9247f1-675b-4c6f-9721-a5c32b204292' },
-  { label: 'Priority Mail', value: 'Priority-Mail#f97359d0-2145-4cf6-bffa-9bea729f5895' },
-  { label: 'UPS Next Day Air Early', value: 'UPS-Next-Day-Air-Early#ffe54635-31e8-4b74-a039-27e6c47b54ce' },
-  { label: 'UPS 2nd Day Air AM', value: 'UPS-2nd-Day-Air-AM#3237ad29-1a9f-4f1b-86fc-8d2b3e567c83' },
-];
+import { PromotionalRule, DiscountScope } from '@/src/types/discount';
 
 const MOCK_CATEGORIES = [
   { id: 'Select Category', name: 'Select Category' },
@@ -98,42 +50,96 @@ const MOCK_PRODUCTS = [
   { id: 'prod-6', name: 'HPR6207 - Crystalline Mirrored Malibu Sunglasses', categoryId: 'cat-2' },
 ];
 
-interface UnifiedDiscountFormProps {
-  initialData?: Partial<DiscountRule>;
-  onSave: (rule: Partial<DiscountRule>) => void;
+const SHIPPING_METHODS = [
+  { value: 'UPS-Ground#1ab20e81-97c8-464e-81be-15170c9e5ae5', label: 'UPS Ground' },
+  { value: 'FedEx-Ground#ebd983c4-cdae-44b5-8c0c-b6bd83957c1c', label: 'FedEx Ground' },
+  { value: 'UPS-3-Day-Select#6ec326f6-1d99-4c5b-b674-eb5c0d3e41c5', label: 'UPS 3 Day Select' },
+  { value: 'UPS-2nd-Day-Air#e632d2a0-7f16-404c-a550-4526caba8895', label: 'UPS 2nd Day Air' },
+  { value: 'UPS-Next-Day-Air-Saver#a9409edd-92d1-4f96-8652-6db971dafd30', label: 'UPS Next Day Air Saver' },
+  { value: 'UPS-Next-Day-Air-Early-AM#c5a28b65-5229-4e75-8721-0e1873dc4dab', label: 'UPS Next Day Air Early AM' },
+  { value: 'UPS-Next-Day-Air#be9940ec-9491-45d8-9d48-c118fe8d0afb', label: 'UPS Next Day Air' },
+  { value: 'FIRST-OVERNIGHT#1a78b843-fed2-415f-9c71-6d895adcfbb1', label: 'FIRST OVERNIGHT' },
+  { value: 'PRIORITY-OVERNIGHT#056d676d-fbfa-4559-b8b8-a822df6aaf7f', label: 'PRIORITY OVERNIGHT' },
+  { value: 'STANDARD-OVERNIGHT#8af4c637-02f4-407b-b1b0-c5cd2316c299', label: 'STANDARD OVERNIGHT' },
+  { value: 'FEDEX-2-DAY-AM#5d255074-1399-4c5d-b2be-1a6866e75625', label: 'FEDEX 2 DAY AM' },
+  { value: 'FEDEX-2-DAY#5650cf47-e405-45c4-b9ee-837017b3195e', label: 'FEDEX 2 DAY' },
+  { value: 'FEDEX-EXPRESS-SAVER#96f45c59-1e2f-4f34-bdea-00f4d08b8e84', label: 'FEDEX EXPRESS SAVER' },
+  { value: 'FedEx-Ground®#a550fb9c-9eea-4b09-b480-99b03a2628e7', label: 'FedEx Ground®' },
+  { value: 'FedEx-2Day®#7a2ac0e5-8440-4685-a486-dded48b4bd8e', label: 'FedEx 2Day®' },
+  { value: 'FedEx-2Day®-A.M.#18b540bd-1141-4e4e-881e-b3bc9b080c80', label: 'FedEx 2Day® A.M.' },
+  { value: 'FedEx-Express-Saver®#ac1755c6-a31a-4ad7-b720-4181242a903f', label: 'FedEx Express Saver®' },
+  { value: 'FedEx-International-Priority-Express®#e4b806b9-cf07-4710-bef1-547829a4b6d2', label: 'FedEx International Priority Express®' },
+  { value: 'FedEx-First-Overnight®#5ed30b9d-18f7-4bb3-92f5-cfcf802dad9c', label: 'FedEx First Overnight®' },
+  { value: 'FedEx-Home-Delivery®#9ab274be-e048-4ddc-8c18-c645679af39a', label: 'FedEx Home Delivery®' },
+  { value: 'FedEx-International-Economy®#ede5c50d-7c11-4398-aa59-e15165a8893d', label: 'FedEx International Economy®' },
+  { value: 'FedEx-International-Priority®#9ec63cbf-032f-4a5e-b12f-79570ef172bb', label: 'FedEx International Priority®' },
+  { value: 'FedEx-International-Priority®-Express#8a8e8629-a756-4291-92d7-0a1399ac7027', label: 'FedEx International Priority® Express' },
+  { value: 'FedEx-Priority-Overnight®#3f35ef5e-a4ef-4282-8c93-accff1ad2067', label: 'FedEx Priority Overnight®' },
+  { value: 'FedEx-Standard-Overnight®#bbd44575-e3d8-4ed7-9e7e-8fce2625ab3c', label: 'FedEx Standard Overnight®' },
+  { value: 'UPS-Ground®#081904e6-7ded-4f8c-99ad-f98f12dd81f1', label: 'UPS Ground®' },
+  { value: 'UPS-2nd-Day-Air®#c35a5a2e-6f91-4fd7-ad66-01e92199e25e', label: 'UPS 2nd Day Air®' },
+  { value: 'UPS-2nd-Day-Air-A.M.®#da68b825-4da6-4c49-8305-e5499a849854', label: 'UPS 2nd Day Air A.M.®' },
+  { value: 'UPS-3-Day-Select®#da68b825-4da6-4c49-8305-e5499a849854', label: 'UPS 3 Day Select®' },
+  { value: 'UPS-Ground-with-Freight-Pricing#f60eb9c7-75d9-4a40-b9b9-d93062638bf0', label: 'UPS Ground with Freight Pricing' },
+  { value: 'UPS-Next-Day-Air®#038079be-8ff2-4f2c-bf9a-70f9e0187d66', label: 'UPS Next Day Air®' },
+  { value: 'UPS-Next-Day-Air-Saver®#fb6bf978-8f0f-47b9-a044-f6d8198c8a1b', label: 'UPS Next Day Air Saver®' },
+  { value: 'UPS-Next-Day-Air®-Early-A.M.®#1c509c44-1f70-4e0c-9d94-429bbd94885a', label: 'UPS Next Day Air® Early A.M.®' },
+  { value: 'UPS-Standard#1c509c44-1f70-4e0c-9d94-429bbd94885a', label: 'UPS Standard' },
+  { value: 'UPS-SurePost®#96dd2a7f-3d43-4ce4-9cb6-f9a4016b5a5f', label: 'UPS SurePost®' },
+  { value: 'UPS-SurePost®-BPM#2466db65-9a02-494d-a2c6-8093dc84ecf0', label: 'UPS SurePost® BPM' },
+  { value: 'UPS-Worldwide-Expedited®#65bec6b5-f272-48b8-841e-e632f3b49a75', label: 'UPS Worldwide Expedited®' },
+  { value: 'UPS-Worldwide-Express®#049f27cb-98e7-49b4-a469-7d21a7ee1a14', label: 'UPS Worldwide Express®' },
+  { value: 'UPS-Worldwide-Saver®#eb126671-c34d-4010-ae00-e42c697ea200', label: 'UPS Worldwide Saver®' },
+  { value: 'First-Class#3833d435-4534-46c8-8a28-6848c9e3c222', label: 'First Class' },
+  { value: 'Ground-Advantage#3684cb8a-1b9a-4f80-bc0f-6b407dc42b57', label: 'Ground Advantage' },
+  { value: 'Priority-Express#6d9247f1-675b-4c6f-9721-a5c32b204292', label: 'Priority Express' },
+  { value: 'Priority-Mail#f97359d0-2145-4cf6-bffa-9bea729f5895', label: 'Priority Mail' },
+  { value: 'UPS-Next-Day-Air-Early#ffe54635-31e8-4b74-a039-27e6c47b54ce', label: 'UPS Next Day Air Early' },
+  { value: 'UPS-2nd-Day-Air-AM#3237ad29-1a9f-4f1b-86fc-8d2b3e567c83', label: 'UPS 2nd Day Air AM' },
+];
+
+interface UnifiedPromotionalRuleFormProps {
+  initialData?: Partial<PromotionalRule>;
+  onSave: (rule: Partial<PromotionalRule>) => void;
   onCancel: () => void;
 }
 
-export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDiscountFormProps) {
-  const [isShippingMethodsOpen, setIsShippingMethodsOpen] = React.useState(false);
+export function UnifiedPromotionalRuleForm({ initialData, onSave, onCancel }: UnifiedPromotionalRuleFormProps) {
   const [productSearch, setProductSearch] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('Select Category');
-  const [formData, setFormData] = React.useState<Partial<DiscountRule>>({
+  const [isShippingMethodsOpen, setIsShippingMethodsOpen] = React.useState(false);
+  const [formData, setFormData] = React.useState<Partial<PromotionalRule>>({
     isAutomatic: false,
-    baseType: 'SHIPPING_DISCOUNT',
+    baseType: 'FLAT_DISCOUNT',
     eqpModifier: 'NONE',
     moqOption: 'NONE',
     setupOption: 'NONE',
     scope: 'SITEWIDE',
     status: 'ACTIVE',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[1] || '2026-12-31',
-    value: 0,
+    startDate: new Date().toISOString().slice(0, 16),
+    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 16),
+    flatDiscountValue: 0,
     flatDiscountType: 'AMOUNT',
     tieredFlatDiscounts: [{ minOrderAmount: 0, discountAmount: 0 }],
-    applyOnBasketPrice: false,
+    flatDiscountApplyOnBasket: false,
     isFreeProduct: false,
     freeProductIds: [],
-    shippingDiscountType: 'FREE',
+    freeProductMinOrderAmount: 0,
+    freeProductApplyOnBasket: false,
     shippingMethods: [],
+    shippingDiscountType: 'FREE',
+    shippingDiscountValue: 0,
+    shippingMinOrderAmount: 0,
     applyOnFirstTimeBuyer: false,
     promoCodeUseOneTime: false,
-    applyOnItemPrice: false,
     applyOnItemPlusCharges: false,
+    categoryIds: [],
+    productIds: [],
+    customerGroupIds: [],
     ...initialData
   });
 
-  const updateFormData = (data: Partial<DiscountRule>) => {
+  const updateFormData = (data: Partial<PromotionalRule>) => {
     setFormData(prev => {
       const next = { ...prev, ...data };
       return next;
@@ -146,9 +152,9 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
     if (formData.baseType === 'FLAT_DISCOUNT') {
       if (formData.isFreeProduct) {
         const productCount = formData.freeProductIds?.length || 0;
-        mainRule = `Free Products (${productCount})${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
+        mainRule = `Free Products (${productCount})${formData.freeProductMinOrderAmount ? ` (Min $${formData.freeProductMinOrderAmount})` : ''}`;
       } else if (formData.flatDiscountType === 'PERCENTAGE') {
-        mainRule = `${formData.value || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
+        mainRule = `${formData.flatDiscountValue || 0}% Flat Discount${formData.maxDiscountAmount ? ` (Max $${formData.maxDiscountAmount})` : ''}`;
       } else {
         const tiers = formData.tieredFlatDiscounts || [];
         if (tiers.length === 1) {
@@ -167,30 +173,14 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
       
       mainRule = parts.concat(addons).join(', ');
     } else if (formData.baseType === 'SHIPPING_DISCOUNT') {
-      mainRule = 'Shipping Only';
-    }
-
-    // Append shipping details if configured
-    if (formData.shippingDiscountType) {
       const type = formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
-                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.value}% Off Shipping` :
-                   `$${formData.value} Off Shipping`;
-      
-      const methods = formData.shippingMethods || [];
-      const methodText = methods.length === 0 ? 'All Methods' : 
-                         methods.length === SHIPPING_METHODS.length ? 'All Methods' :
-                         methods.length === 1 ? SHIPPING_METHODS.find(m => m.value === methods[0])?.label :
-                         `${methods.length} Methods`;
-
-      // If it's the base type, we just use the details
-      if (formData.baseType === 'SHIPPING_DISCOUNT') {
-        mainRule = `${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
-      } else {
-        // Append if it's an add-on and user changed something from default
-        if (formData.shippingDiscountType !== 'FREE' || (formData.minOrderAmount && formData.minOrderAmount > 0) || methods.length > 0) {
-          mainRule += ` + ${type} on ${methodText}${formData.minOrderAmount ? ` (Min $${formData.minOrderAmount})` : ''}`;
-        }
-      }
+                   formData.shippingDiscountType === 'PERCENTAGE' ? `${formData.shippingDiscountValue}% Off Shipping` :
+                   `$${formData.shippingDiscountValue} Off Shipping`;
+      const methodCount = formData.shippingMethods?.length || 0;
+      const methodText = methodCount === 0 ? 'All Methods' : 
+                        methodCount === SHIPPING_METHODS.length ? 'All Methods' :
+                        `${methodCount} Methods`;
+      mainRule = `${type} (${methodText})`;
     }
 
     return mainRule;
@@ -204,9 +194,9 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
           <CardHeader className="border-b bg-slate-50/50">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               <Tag className="w-5 h-5 text-primary" />
-              Configure Discount Rule
+              Configure Promotional Rule
             </CardTitle>
-            <CardDescription>Define the core logic and targeting for your discount.</CardDescription>
+            <CardDescription>Define the core logic and targeting for your promotion.</CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-10">
             
@@ -278,25 +268,39 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   <Label className="text-muted-foreground">Base Discount</Label>
                   <div className="flex flex-wrap gap-4">
                     <Button 
-                      variant={formData.baseType === 'SHIPPING_DISCOUNT' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-lg font-bold min-w-[140px]"
-                      onClick={() => updateFormData({ baseType: 'SHIPPING_DISCOUNT' })}
-                    >
-                      No Product Discount
-                    </Button>
-                    <Button 
                       variant={formData.baseType === 'EQP' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-lg font-bold min-w-[140px]"
+                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
                       onClick={() => updateFormData({ baseType: 'EQP' })}
                     >
                       EQP
                     </Button>
                     <Button 
                       variant={formData.baseType === 'FLAT_DISCOUNT' ? 'default' : 'outline'}
-                      className="flex-1 h-16 text-lg font-bold min-w-[140px]"
+                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
                       onClick={() => updateFormData({ baseType: 'FLAT_DISCOUNT' })}
                     >
-                     Flat Discount on Products
+                      Flat Discount On Product
+                    </Button>
+                    <Button 
+                      variant={formData.baseType === 'SHIPPING_DISCOUNT' ? 'default' : 'outline'}
+                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
+                      onClick={() => updateFormData({ baseType: 'SHIPPING_DISCOUNT', shippingDiscountType: 'FREE', shippingDiscountValue: 0, shippingMethods: [] })}
+                    >
+                      Shipping Discount
+                    </Button>
+                    <Button 
+                      variant={formData.baseType === 'MOQ' ? 'default' : 'outline'}
+                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
+                      onClick={() => updateFormData({ baseType: 'MOQ' })}
+                    >
+                      MOQ
+                    </Button>
+                    <Button 
+                      variant={formData.baseType === 'SETUP_CHARGE' ? 'default' : 'outline'}
+                      className="flex-1 h-16 text-sm font-bold min-w-[140px] whitespace-normal leading-tight"
+                      onClick={() => updateFormData({ baseType: 'SETUP_CHARGE' })}
+                    >
+                      Setup Charge
                     </Button>
                   </div>
                 </div>
@@ -366,8 +370,8 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                           <div className="flex items-center space-x-2">
                             <Checkbox 
                               id="basketPrice" 
-                              checked={formData.applyOnBasketPrice}
-                              onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
+                              checked={formData.flatDiscountApplyOnBasket}
+                              onCheckedChange={(checked) => updateFormData({ flatDiscountApplyOnBasket: !!checked })}
                             />
                             <Label htmlFor="basketPrice" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
                           </div>
@@ -388,16 +392,16 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                               type="number" 
                               placeholder="0.00" 
                               className="bg-white"
-                              value={formData.minOrderAmount || ''} 
-                              onChange={e => updateFormData({ minOrderAmount: parseFloat(e.target.value) || 0 })}
+                              value={formData.freeProductMinOrderAmount || ''} 
+                              onChange={e => updateFormData({ freeProductMinOrderAmount: parseFloat(e.target.value) || 0 })}
                             />
                           </div>
                           <div className="flex items-end pb-2">
                             <div className="flex items-center space-x-2">
                               <Checkbox 
                                 id="basketPriceFree" 
-                                checked={formData.applyOnBasketPrice}
-                                onCheckedChange={(checked) => updateFormData({ applyOnBasketPrice: !!checked })}
+                                checked={formData.freeProductApplyOnBasket}
+                                onCheckedChange={(checked) => updateFormData({ freeProductApplyOnBasket: !!checked })}
                               />
                               <Label htmlFor="basketPriceFree" className="text-xs font-medium cursor-pointer">Apply On Basket Price</Label>
                             </div>
@@ -513,8 +517,8 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                                 type="number" 
                                 placeholder="0" 
                                 className="bg-white"
-                                value={formData.value || ''} 
-                                onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
+                                value={formData.flatDiscountValue || ''} 
+                                onChange={e => updateFormData({ flatDiscountValue: parseFloat(e.target.value) || 0 })}
                               />
                             </div>
                             <div className="space-y-2">
@@ -598,234 +602,236 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   </motion.div>
                 )}
 
-                {formData.baseType !== 'SHIPPING_DISCOUNT' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* MOQ Add-on */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="font-bold">MOQ Add-on</Label>
-                        <Badge variant={formData.moqOption !== 'NONE' ? 'default' : 'outline'}>
-                          {formData.moqOption !== 'NONE' ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {['NONE', 'HALF', 'FULL'].map((opt) => (
-                          <Button
-                            key={opt}
-                            variant={formData.moqOption === opt ? 'secondary' : 'outline'}
-                            className={`flex-1 text-xs min-w-[80px] ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                            onClick={() => updateFormData({ moqOption: opt })}
-                          >
-                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
-                          </Button>
-                        ))}
-                        <div className="flex-1 min-w-[120px] relative">
-                          <Input 
-                            type="number"
-                            placeholder="Custom %"
-                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                            value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                updateFormData({ moqOption: 'NONE' });
-                              } else {
-                                updateFormData({ moqOption: `${val}%` });
-                              }
-                            }}
-                          />
-                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
-                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
-                        </div>
-                      </div>
+                {formData.baseType === 'SHIPPING_DISCOUNT' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6 p-6 bg-slate-50 rounded-xl border"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold uppercase text-slate-500">Shipping Discount Configuration</Label>
+                      <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                        {formData.shippingDiscountType === 'FREE' ? 'Free Shipping' : 
+                         formData.shippingDiscountType === 'PERCENTAGE' ? 'Percentage' : 'Flat Amount'}
+                      </Badge>
                     </div>
 
-                    {/* Setup Charge Add-on */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="font-bold">Setup Charge Add-on</Label>
-                        <Badge variant={formData.setupOption !== 'NONE' ? 'default' : 'outline'}>
-                          {formData.setupOption !== 'NONE' ? 'Enabled' : 'Disabled'}
-                        </Badge>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
+                        <Input 
+                          type="number" 
+                          placeholder="0.00" 
+                          className="bg-white"
+                          value={formData.shippingMinOrderAmount || ''} 
+                          onChange={e => updateFormData({ shippingMinOrderAmount: parseFloat(e.target.value) || 0 })}
+                        />
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {['NONE', 'HALF', 'FULL'].map((opt) => (
-                          <Button
-                            key={opt}
-                            variant={formData.setupOption === opt ? 'secondary' : 'outline'}
-                            className={`flex-1 text-xs min-w-[80px] ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                            onClick={() => updateFormData({ setupOption: opt })}
+                      <div className="space-y-2 relative">
+                        <Label className="text-xs font-bold text-slate-500">Shipping Methods</Label>
+                        <div className="relative">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-between bg-white font-normal"
+                            onClick={() => setIsShippingMethodsOpen(!isShippingMethodsOpen)}
                           >
-                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
-                          </Button>
-                        ))}
-                        <div className="flex-1 min-w-[120px] relative">
-                          <Input 
-                            type="number"
-                            placeholder="Custom %"
-                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                            value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                updateFormData({ setupOption: 'NONE' });
-                              } else {
-                                updateFormData({ setupOption: `${val}%` });
-                              }
-                            }}
-                          />
-                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
-                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Section 3: Shipping Discount Configuration */}
-            <div className="space-y-8">
-              <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
-                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">3</span>
-                Shipping Discount Configuration
-              </div>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500">Minimum Order Amount ($)</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="bg-white"
-                      value={formData.minOrderAmount || ''} 
-                      onChange={e => updateFormData({ minOrderAmount: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-500">Shipping Methods</Label>
-                    <div className="border rounded-md bg-white overflow-hidden">
-                      <button 
-                        type="button"
-                        onClick={() => setIsShippingMethodsOpen(!isShippingMethodsOpen)}
-                        className="w-full p-3 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium">
-                            {formData.shippingMethods?.length === 0 ? 'All Shipping Methods' : 
-                             formData.shippingMethods?.length === SHIPPING_METHODS.length ? 'All Shipping Methods' :
-                             `${formData.shippingMethods?.length} Methods Selected`}
-                          </span>
-                          {formData.shippingMethods && formData.shippingMethods.length > 0 && formData.shippingMethods.length < SHIPPING_METHODS.length && (
-                            <span className="text-[10px] text-slate-400 truncate max-w-[200px]">
-                              {formData.shippingMethods.map(v => SHIPPING_METHODS.find(m => m.value === v)?.label).join(', ')}
+                            <span className="truncate">
+                              {formData.shippingMethods?.length === 0 || formData.shippingMethods?.length === SHIPPING_METHODS.length
+                                ? "All Shipping Methods"
+                                : `${formData.shippingMethods?.length} methods selected`}
                             </span>
+                            <ChevronDown className={`w-4 h-4 opacity-50 transition-transform ${isShippingMethodsOpen ? 'rotate-180' : ''}`} />
+                          </Button>
+
+                          {isShippingMethodsOpen && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-30" 
+                                onClick={() => setIsShippingMethodsOpen(false)}
+                              />
+                              <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-md shadow-lg z-40 p-2">
+                                <ScrollArea className="h-64">
+                                  <div className="space-y-2 p-1">
+                                    <div className="flex items-center space-x-2 pb-2 border-b mb-2">
+                                      <Checkbox 
+                                        id="selectAll" 
+                                        checked={formData.shippingMethods?.length === SHIPPING_METHODS.length}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            updateFormData({ shippingMethods: SHIPPING_METHODS.map(m => m.value) });
+                                          } else {
+                                            updateFormData({ shippingMethods: [] });
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor="selectAll" className="font-bold cursor-pointer">Select All</Label>
+                                    </div>
+                                    {SHIPPING_METHODS.map((method) => (
+                                      <div key={method.value} className="flex items-center space-x-2 hover:bg-slate-50 p-1 rounded">
+                                        <Checkbox 
+                                          id={method.value} 
+                                          checked={formData.shippingMethods?.includes(method.value)}
+                                          onCheckedChange={(checked) => {
+                                            const current = formData.shippingMethods || [];
+                                            if (checked) {
+                                              updateFormData({ shippingMethods: [...current, method.value] });
+                                            } else {
+                                              updateFormData({ shippingMethods: current.filter(v => v !== method.value) });
+                                            }
+                                          }}
+                                        />
+                                        <Label htmlFor={method.value} className="text-sm cursor-pointer flex-1">{method.label}</Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </ScrollArea>
+                              </div>
+                            </>
                           )}
                         </div>
-                        {isShippingMethodsOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                      </button>
-
-                      <motion.div
-                        initial={false}
-                        animate={{ height: isShippingMethodsOpen ? 'auto' : 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-2 border-t bg-slate-50 flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox 
-                              id="selectAllShipping"
-                              checked={formData.shippingMethods?.length === SHIPPING_METHODS.length}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  updateFormData({ shippingMethods: SHIPPING_METHODS.map(m => m.value) });
-                                } else {
-                                  updateFormData({ shippingMethods: [] });
-                                }
-                              }}
-                            />
-                            <Label htmlFor="selectAllShipping" className="text-xs font-bold cursor-pointer">Select All</Label>
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            {formData.shippingMethods?.length || 0} selected
-                          </span>
-                        </div>
-                        <ScrollArea className="h-[200px]">
-                          <div className="p-2 space-y-1">
-                            {SHIPPING_METHODS.map((method) => (
-                              <div key={method.value} className="flex items-center space-x-2 hover:bg-slate-50 p-1 rounded transition-colors">
-                                <Checkbox 
-                                  id={`method-${method.value}`}
-                                  checked={formData.shippingMethods?.includes(method.value)}
-                                  onCheckedChange={(checked) => {
-                                    const current = formData.shippingMethods || [];
-                                    if (checked) {
-                                      updateFormData({ shippingMethods: [...current, method.value] });
-                                    } else {
-                                      updateFormData({ shippingMethods: current.filter(v => v !== method.value) });
-                                    }
-                                  }}
-                                />
-                                <Label htmlFor={`method-${method.value}`} className="text-xs cursor-pointer flex-1 py-1">
-                                  {method.label}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </motion.div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => updateFormData({ shippingDiscountType: 'FREE', value: 0 })}
-                    >
-                      Free Shipping
-                    </Button>
-                    <Button 
-                      variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
-                    >
-                      Amount ($)
-                    </Button>
-                    <Button 
-                      variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
-                    >
-                      Percentage (%)
-                    </Button>
-                  </div>
-                </div>
+                    <div className="space-y-3">
+                      <Label className="text-xs font-bold text-slate-500">Discount Type</Label>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant={formData.shippingDiscountType === 'FREE' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updateFormData({ shippingDiscountType: 'FREE', shippingDiscountValue: 0 })}
+                        >
+                          Free Shipping
+                        </Button>
+                        <Button 
+                          variant={formData.shippingDiscountType === 'AMOUNT' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updateFormData({ shippingDiscountType: 'AMOUNT' })}
+                        >
+                          Amount ($)
+                        </Button>
+                        <Button 
+                          variant={formData.shippingDiscountType === 'PERCENTAGE' ? 'default' : 'outline'}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => updateFormData({ shippingDiscountType: 'PERCENTAGE' })}
+                        >
+                          Percentage (%)
+                        </Button>
+                      </div>
+                    </div>
 
-                {formData.shippingDiscountType !== 'FREE' && (
+                    {formData.shippingDiscountType !== 'FREE' && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="pt-2"
+                      >
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold text-slate-500">
+                            {formData.shippingDiscountType === 'PERCENTAGE' ? 'Percentage (%)' : 'Discount Amount ($)'}
+                          </Label>
+                          <Input 
+                            type="number" 
+                            placeholder="0.00" 
+                            className="bg-white"
+                            value={formData.shippingDiscountValue || ''} 
+                            onChange={e => updateFormData({ shippingDiscountValue: parseFloat(e.target.value) || 0 })}
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                )}
+
+                {formData.baseType === 'MOQ' && (
                   <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="space-y-2 pt-2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4 p-6 bg-slate-50 rounded-xl border"
                   >
-                    <Label className="text-xs font-bold text-slate-500">
-                      {formData.shippingDiscountType === 'AMOUNT' ? 'Discount Amount ($)' : 'Discount Percentage (%)'}
-                    </Label>
-                    <Input 
-                      type="number" 
-                      placeholder="0.00" 
-                      className="bg-white text-xl font-bold h-12"
-                      value={formData.value || ''} 
-                      onChange={e => updateFormData({ value: parseFloat(e.target.value) || 0 })}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold uppercase text-slate-500">MOQ Configuration</Label>
+                      {(!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE')) && (
+                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {['NONE', 'HALF', 'FULL'].map((opt) => (
+                        <Button
+                          key={opt}
+                          variant={formData.moqOption === opt ? 'secondary' : 'ghost'}
+                          className={`flex-1 border min-w-[100px] ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
+                          onClick={() => updateFormData({ moqOption: opt })}
+                        >
+                          {opt === 'NONE' ? 'None' : opt.charAt(0) + opt.slice(1).toLowerCase()}
+                        </Button>
+                      ))}
+                      <div className="flex-1 min-w-[150px] relative">
+                        <Input 
+                          type="number"
+                          placeholder="Custom %"
+                          className={`pl-8 ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                          value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              updateFormData({ moqOption: 'NONE' });
+                            } else {
+                              updateFormData({ moqOption: `${val}%` });
+                            }
+                          }}
+                        />
+                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
+                        <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {formData.baseType === 'SETUP_CHARGE' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4 p-6 bg-slate-50 rounded-xl border"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold uppercase text-slate-500">Setup Charge Configuration</Label>
+                      {(!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE')) && (
+                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">Custom Value</Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {['NONE', 'HALF', 'FULL'].map((opt) => (
+                        <Button
+                          key={opt}
+                          variant={formData.setupOption === opt ? 'secondary' : 'ghost'}
+                          className={`flex-1 border min-w-[100px] ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 bg-white'}`}
+                          onClick={() => updateFormData({ setupOption: opt })}
+                        >
+                          {opt === 'NONE' ? 'None' : opt.charAt(0) + opt.slice(1).toLowerCase()}
+                        </Button>
+                      ))}
+                      <div className="flex-1 min-w-[150px] relative">
+                        <Input 
+                          type="number"
+                          placeholder="Custom %"
+                          className={`pl-8 ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                          value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              updateFormData({ setupOption: 'NONE' });
+                            } else {
+                              updateFormData({ setupOption: `${val}%` });
+                            }
+                          }}
+                        />
+                        <span className="absolute left-3 top-2.5 text-slate-400 font-bold">-</span>
+                        <span className="absolute right-3 top-2.5 text-slate-400 text-xs">%</span>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </div>
@@ -833,10 +839,10 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
 
             <Separator />
 
-            {/* Section 4: Targeting & Validity */}
+            {/* Section 3: Targeting & Validity */}
             <div className="space-y-8">
               <div className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-wider">
-                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">4</span>
+                <span className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">3</span>
                 Targeting & Validity
               </div>
 
@@ -875,12 +881,12 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   <Label>Validity Period</Label>
                   <div className="flex gap-2">
                     <Input 
-                      type="date" 
+                      type="datetime-local" 
                       value={formData.startDate} 
                       onChange={e => updateFormData({ startDate: e.target.value })}
                     />
                     <Input 
-                      type="date" 
+                      type="datetime-local" 
                       value={formData.endDate} 
                       onChange={e => updateFormData({ endDate: e.target.value })}
                     />
@@ -922,16 +928,6 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                     />
                   </div>
                 )}
-
-                <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
-                  <Label htmlFor="itemPrice" className="text-sm font-medium cursor-pointer">Apply On Item Price</Label>
-                  <Switch 
-                    id="itemPrice" 
-                    checked={formData.applyOnItemPrice}
-                    onCheckedChange={(checked) => updateFormData({ applyOnItemPrice: !!checked })}
-                    className="data-checked:bg-emerald-500"
-                  />
-                </div>
 
                 <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border">
                   <Label htmlFor="itemPlusCharges" className="text-sm font-medium cursor-pointer">Apply On Item + Charges</Label>
