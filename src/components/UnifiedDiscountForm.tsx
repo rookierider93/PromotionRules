@@ -308,90 +308,6 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                   </div>
                 </div>
 
-                {formData.baseType !== 'SHIPPING_DISCOUNT' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* MOQ Add-on */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="font-bold">MOQ Add-on</Label>
-                        <Badge variant={formData.moqOption !== 'NONE' ? 'default' : 'outline'}>
-                          {formData.moqOption !== 'NONE' ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {['NONE', 'HALF', 'FULL'].map((opt) => (
-                          <Button
-                            key={opt}
-                            variant={formData.moqOption === opt ? 'secondary' : 'outline'}
-                            className={`flex-1 text-xs min-w-[80px] ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                            onClick={() => updateFormData({ moqOption: opt })}
-                          >
-                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
-                          </Button>
-                        ))}
-                        <div className="flex-1 min-w-[120px] relative">
-                          <Input 
-                            type="number"
-                            placeholder="Custom %"
-                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                            value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                updateFormData({ moqOption: 'NONE' });
-                              } else {
-                                updateFormData({ moqOption: `${val}%` });
-                              }
-                            }}
-                          />
-                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
-                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Setup Charge Add-on */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label className="font-bold">Setup Charge Add-on</Label>
-                        <Badge variant={formData.setupOption !== 'NONE' ? 'default' : 'outline'}>
-                          {formData.setupOption !== 'NONE' ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {['NONE', 'HALF', 'FULL'].map((opt) => (
-                          <Button
-                            key={opt}
-                            variant={formData.setupOption === opt ? 'secondary' : 'outline'}
-                            className={`flex-1 text-xs min-w-[80px] ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
-                            onClick={() => updateFormData({ setupOption: opt })}
-                          >
-                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
-                          </Button>
-                        ))}
-                        <div className="flex-1 min-w-[120px] relative">
-                          <Input 
-                            type="number"
-                            placeholder="Custom %"
-                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
-                            value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val === '') {
-                                updateFormData({ setupOption: 'NONE' });
-                              } else {
-                                updateFormData({ setupOption: `${val}%` });
-                              }
-                            }}
-                          />
-                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
-                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {formData.baseType === 'EQP' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
@@ -687,6 +603,90 @@ export function UnifiedDiscountForm({ initialData, onSave, onCancel }: UnifiedDi
                       </div>
                     )}
                   </motion.div>
+                )}
+
+                {formData.baseType !== 'SHIPPING_DISCOUNT' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* MOQ Add-on */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-bold">MOQ Add-on</Label>
+                        <Badge variant={formData.moqOption !== 'NONE' ? 'default' : 'outline'}>
+                          {formData.moqOption !== 'NONE' ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {['NONE', 'HALF', 'FULL'].map((opt) => (
+                          <Button
+                            key={opt}
+                            variant={formData.moqOption === opt ? 'secondary' : 'outline'}
+                            className={`flex-1 text-xs min-w-[80px] ${formData.moqOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                            onClick={() => updateFormData({ moqOption: opt })}
+                          >
+                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
+                          </Button>
+                        ))}
+                        <div className="flex-1 min-w-[120px] relative">
+                          <Input 
+                            type="number"
+                            placeholder="Custom %"
+                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                            value={!['NONE', 'HALF', 'FULL'].includes(formData.moqOption || 'NONE') ? formData.moqOption?.replace('%', '') : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                updateFormData({ moqOption: 'NONE' });
+                              } else {
+                                updateFormData({ moqOption: `${val}%` });
+                              }
+                            }}
+                          />
+                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
+                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Setup Charge Add-on */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="font-bold">Setup Charge Add-on</Label>
+                        <Badge variant={formData.setupOption !== 'NONE' ? 'default' : 'outline'}>
+                          {formData.setupOption !== 'NONE' ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {['NONE', 'HALF', 'FULL'].map((opt) => (
+                          <Button
+                            key={opt}
+                            variant={formData.setupOption === opt ? 'secondary' : 'outline'}
+                            className={`flex-1 text-xs min-w-[80px] ${formData.setupOption === opt ? 'border-primary bg-primary/10 text-primary' : ''}`}
+                            onClick={() => updateFormData({ setupOption: opt })}
+                          >
+                            {opt.charAt(0) + opt.slice(1).toLowerCase()}
+                          </Button>
+                        ))}
+                        <div className="flex-1 min-w-[120px] relative">
+                          <Input 
+                            type="number"
+                            placeholder="Custom %"
+                            className={`pl-8 h-9 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? 'border-primary ring-1 ring-primary' : 'bg-white'}`}
+                            value={!['NONE', 'HALF', 'FULL'].includes(formData.setupOption || 'NONE') ? formData.setupOption?.replace('%', '') : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                updateFormData({ setupOption: 'NONE' });
+                              } else {
+                                updateFormData({ setupOption: `${val}%` });
+                              }
+                            }}
+                          />
+                          <span className="absolute left-3 top-2 text-slate-400 font-bold">-</span>
+                          <span className="absolute right-3 top-2 text-slate-400 text-xs">%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
